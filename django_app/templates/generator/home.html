@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block title %}Product Icon Generator - Home{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white text-center">
+                <h3><i class="fas fa-magic me-2"></i>Product Icon Generator</h3>
+                <p class="mb-0">Upload multiple product images and select pictos to generate beautiful branded images</p>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Multiple Product Images Upload -->
+                    <div class="mb-4">
+                        <label for="id_product_images" class="form-label">
+                            <i class="fas fa-images me-2"></i>Upload Product Images (Select Multiple)
+                        </label>
+                        <input type="file" name="product_images" id="id_product_images" 
+                               class="form-control" accept="image/*" multiple required>
+                        {% if form.product_images.errors %}
+                            <div class="text-danger">{{ form.product_images.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Hold Ctrl (or Cmd on Mac) to select multiple images. Supported formats: JPG, PNG, GIF, WEBP
+                        </div>
+                        <div id="selected-files" class="mt-2 text-muted small"></div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Vertical Pictos Section -->
+                    <div class="mb-4">
+                        <h5 class="mb-3"><i class="fas fa-arrows-alt-v me-2"></i>Vertical Pictos (Left Side)</h5>
+                        <p class="text-muted">Select pictos to display on the left side of the image, stacked vertically from bottom to top.</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <label class="form-label">Position 1</label>
+                                {{ form.vertical_pos_1 }}
+                            </div>
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <label class="form-label">Position 2</label>
+                                {{ form.vertical_pos_2 }}
+                            </div>
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <label class="form-label">Position 3</label>
+                                {{ form.vertical_pos_3 }}
+                            </div>
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <label class="form-label">Position 4</label>
+                                {{ form.vertical_pos_4 }}
+                            </div>
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <label class="form-label">Position 5 (Top)</label>
+                                {{ form.vertical_pos_5 }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Horizontal Pictos Section -->
+                    <div class="mb-4">
+                        <h5 class="mb-3"><i class="fas fa-arrows-alt-h me-2"></i>Horizontal Pictos (Bottom Row)</h5>
+                        <p class="text-muted">Select category and file for each position. These will display at the bottom of the image in a row.</p>
+                        
+                        <!-- Position 1 -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <strong>Position 1 (Right)</strong>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Category</label>
+                                        {{ form.horizontal_cat_1 }}
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">File</label>
+                                        <select name="horizontal_file_1" class="form-select horizontal-file" data-position="1">
+                                            <option value="">-- Select Category First --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Position 2 -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <strong>Position 2</strong>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Category</label>
+                                        {{ form.horizontal_cat_2 }}
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">File</label>
+                                        <select name="horizontal_file_2" class="form-select horizontal-file" data-position="2">
+                                            <option value="">-- Select Category First --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Position 3 -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <strong>Position 3</strong>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Category</label>
+                                        {{ form.horizontal_cat_3 }}
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">File</label>
+                                        <select name="horizontal_file_3" class="form-select horizontal-file" data-position="3">
+                                            <option value="">-- Select Category First --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Position 4 -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <strong>Position 4</strong>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Category</label>
+                                        {{ form.horizontal_cat_4 }}
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">File</label>
+                                        <select name="horizontal_file_4" class="form-select horizontal-file" data-position="4">
+                                            <option value="">-- Select Category First --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Position 5 -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <strong>Position 5 (Left)</strong>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Category</label>
+                                        {{ form.horizontal_cat_5 }}
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">File</label>
+                                        <select name="horizontal_file_5" class="form-select horizontal-file" data-position="5">
+                                            <option value="">-- Select Category First --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-magic me-2"></i>Generate Product Images
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-star me-2"></i>Features</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-images fa-2x text-primary mb-2"></i>
+                            <h6>Multiple Images</h6>
+                            <p class="text-muted">Upload multiple product images at once</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-th fa-2x text-primary mb-2"></i>
+                            <h6>Select Pictos</h6>
+                            <p class="text-muted">Choose vertical and horizontal pictos - applied to all images</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-download fa-2x text-primary mb-2"></i>
+                            <h6>Batch Download</h6>
+                            <p class="text-muted">Download all branded product images</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show selected file count
+    const fileInput = document.getElementById('id_product_images');
+    const selectedFilesDiv = document.getElementById('selected-files');
+    
+    fileInput.addEventListener('change', function() {
+        const count = this.files.length;
+        if (count > 0) {
+            selectedFilesDiv.innerHTML = `<i class="fas fa-check-circle text-success me-1"></i>${count} image(s) selected`;
+        } else {
+            selectedFilesDiv.innerHTML = '';
+        }
+    });
+    
+    // Get all horizontal category dropdowns
+    const categorySelects = document.querySelectorAll('.horizontal-category');
+    
+    categorySelects.forEach(function(categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            const position = this.dataset.position;
+            const category = this.value;
+            const fileSelect = document.querySelector(`.horizontal-file[data-position="${position}"]`);
+            
+            // Clear current options
+            fileSelect.innerHTML = '<option value="">-- Loading... --</option>';
+            
+            if (!category) {
+                fileSelect.innerHTML = '<option value="">-- Select Category First --</option>';
+                return;
+            }
+            
+            // Fetch files for selected category
+            fetch(`{% url 'get_horizontal_files' %}?category=${encodeURIComponent(category)}`)
+                .then(response => response.json())
+                .then(data => {
+                    fileSelect.innerHTML = '<option value="">-- Select File --</option>';
+                    data.files.forEach(function(file) {
+                        const option = document.createElement('option');
+                        option.value = file.value;
+                        option.textContent = file.label;
+                        fileSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching files:', error);
+                    fileSelect.innerHTML = '<option value="">-- Error loading files --</option>';
+                });
+        });
+    });
+});
+</script>
+{% endblock %}

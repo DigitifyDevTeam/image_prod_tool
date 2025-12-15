@@ -1,0 +1,36 @@
+{
+  "icons": {
+    "extrafort": {
+      "file": "extrafort.png",
+      "position": [
+        50,
+        50
+      ],
+      "question": "ExtraFort?"
+    },
+    "nouvelle": {
+      "file": "nouvelle formule.png",
+      "position": [
+        50,
+        150
+      ],
+      "question": "Nouvelle Formule?"
+    },
+    "france": {
+      "file": "007-france.png",
+      "position": [
+        50,
+        250
+      ],
+      "question": "Made in France?"
+    },
+    "bio": {
+      "file": "Bio.png",
+      "position": [
+        50,
+        350
+      ],
+      "question": "Bio?"
+    }
+  }
+}
