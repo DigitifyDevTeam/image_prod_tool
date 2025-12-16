@@ -114,15 +114,17 @@ class ProductIconGenerator:
         """
         picto_max_size = 100  # Same size as horizontal pictos
         x_pos = 20  # X position (left side)
+
         
         # Fixed Y positions with proper spacing (115px apart)
         # Position 1 at BOTTOM, Position 5 at TOP
+       
         vertical_positions = [
-            690,   # Position 1 - BOTTOM
-            575,   # Position 2
-            460,   # Position 3
-            345,   # Position 4
-            230,   # Position 5 - TOP
+            575,   # Position 1 - BOTTOM
+            460,   # Position 2
+            345,   # Position 3
+            230,   # Position 4
+            115,   # Position 5 - TOP
         ]
         
         for i, filename in enumerate(vertical_selections):
@@ -146,7 +148,7 @@ class ProductIconGenerator:
         picto_max_size = 100  # Same size as vertical pictos
         y_pos = self.background_height - 120  # Y position (near bottom)
         
-        # Fixed X positions with REDUCED spacing (105px apart - closer together)
+        # Fixed X positions with REDUCED spacing (110px apart - closer together)
         horizontal_positions = [
             690,   # Position 1 - RIGHT
             585,   # Position 2
@@ -299,11 +301,55 @@ def home(request):
     return render(request, 'generator/home.html', {'form': form})
 
 
+def get_picto_data_from_batch(batch):
+    """Extract picto data from a batch submission for preview editor"""
+    vertical_pictos = []
+    vertical_positions = [575, 460, 345, 230, 115]  # Y positions for vertical pictos
+    
+    for i in range(1, 6):
+        filename = getattr(batch, f'vertical_pos_{i}', '') or ''
+        if filename:
+            vertical_pictos.append({
+                'url': f'/data/Vertical_pictos/{filename}',
+                'x': 20,
+                'y': vertical_positions[i-1]
+            })
+    
+    horizontal_pictos = []
+    horizontal_positions = [690, 585, 480, 375, 270]  # X positions for horizontal pictos
+    y_pos = 800 - 120  # Near bottom
+    
+    for i in range(1, 6):
+        category = getattr(batch, f'horizontal_cat_{i}', '') or ''
+        filename = getattr(batch, f'horizontal_file_{i}', '') or ''
+        if category and filename:
+            horizontal_pictos.append({
+                'url': f'/data/horizantal_Pictos/{category}/{filename}',
+                'x': horizontal_positions[i-1],
+                'y': y_pos
+            })
+    
+    return {
+        'vertical': vertical_pictos,
+        'horizontal': horizontal_pictos,
+        'background_url': '/backgrounds/background.jpg'
+    }
+
+
 def result(request, submission_id):
     """Display the result page with a single generated image"""
     try:
         submission = ProductSubmission.objects.get(id=submission_id)
-        return render(request, 'generator/result.html', {'submission': submission})
+        
+        # Get picto data for preview editor
+        picto_data = {}
+        if submission.batch:
+            picto_data = get_picto_data_from_batch(submission.batch)
+        
+        return render(request, 'generator/result.html', {
+            'submission': submission,
+            'picto_data': json.dumps(picto_data)
+        })
     except ProductSubmission.DoesNotExist:
         messages.error(request, 'Submission not found.')
         return redirect('home')
@@ -314,9 +360,14 @@ def batch_result(request, batch_id):
     try:
         batch = BatchSubmission.objects.get(id=batch_id)
         products = batch.products.all()
+        
+        # Get picto data for preview editor
+        picto_data = get_picto_data_from_batch(batch)
+        
         return render(request, 'generator/batch_result.html', {
             'batch': batch,
-            'products': products
+            'products': products,
+            'picto_data': json.dumps(picto_data)
         })
     except BatchSubmission.DoesNotExist:
         messages.error(request, 'Batch not found.')

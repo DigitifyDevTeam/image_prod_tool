@@ -109,6 +109,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
+    BASE_DIR / 'Data',  # For pictos and other data files
 ]
 
 # Media files (uploaded files)
