@@ -1,0 +1,28 @@
+services:
+  web:
+    build: .
+    container_name: product-web
+    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn product_generator.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+    working_dir: /app/django_app
+    volumes:
+      - static_volume:/app/django_app/staticfiles
+      - media_volume:/app/django_app/media
+      - db_volume:/app/django_app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.production
+    environment:
+      - DB_ENGINE=sqlite
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"] || exit 0
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  static_volume:
+  media_volume:
+  db_volume:
+
