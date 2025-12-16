@@ -617,9 +617,7 @@ class PreviewEditor {
             this.originalCenter.x = this.product.x;
             this.originalCenter.y = this.product.y;
             
-            // Store fixed frame dimensions (these NEVER change)
-            this.fixedFrame.width = this.product.width;
-            this.fixedFrame.height = this.product.height;
+            // Fixed frame dimensions are always 450x450 (already set in constructor)
             
             // Update input fields
             document.getElementById('productWidth').value = this.product.width;
@@ -721,12 +719,11 @@ class PreviewEditor {
     drawCenterReferenceFrame() {
         if (!this.showGuides) return;
         
-        // Use FIXED frame values - these never change
-        // Fallback to product dimensions if fixedFrame not set yet
+        // Use FIXED frame values - always 450x450, centered at 400,400
         const centerX = this.fixedFrame?.centerX || 400;  // Always 400
         const centerY = this.fixedFrame?.centerY || 400;  // Always 400
-        const frameW = this.fixedFrame?.width || this.product?.originalWidth || 350;
-        const frameH = this.fixedFrame?.height || this.product?.originalHeight || 350;
+        const frameW = 450;  // Always 450
+        const frameH = 450;  // Always 450
         
         // Validate dimensions
         if (!frameW || !frameH || frameW <= 0 || frameH <= 0) {
