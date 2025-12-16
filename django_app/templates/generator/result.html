@@ -238,6 +238,12 @@ class PreviewEditor {
             aspectRatio: 1
         };
         
+        // Original center position (reference frame)
+        this.originalCenter = {
+            x: 400,
+            y: 400
+        };
+        
         // Drag state
         this.isDragging = false;
         this.dragOffset = { x: 0, y: 0 };
@@ -375,6 +381,10 @@ class PreviewEditor {
             this.product.originalHeight = this.product.height;
             this.product.aspectRatio = this.product.width / this.product.height;
             
+            // Update original center reference to match initial position
+            this.originalCenter.x = this.product.x;
+            this.originalCenter.y = this.product.y;
+            
             // Update input fields
             document.getElementById('productWidth').value = this.product.width;
             document.getElementById('productHeight').value = this.product.height;
@@ -449,6 +459,9 @@ class PreviewEditor {
             this.ctx.fillRect(0, 0, 800, 800);
         }
         
+        // Draw original center reference frame (compass guide)
+        this.drawCenterReferenceFrame();
+        
         // Draw product (centered at x,y)
         if (this.productImg) {
             const drawX = this.product.x - this.product.width / 2;
@@ -469,9 +482,127 @@ class PreviewEditor {
         }
     }
     
+    drawCenterReferenceFrame() {
+        const centerX = this.originalCenter.x;
+        const centerY = this.originalCenter.y;
+        const halfW = this.product.originalWidth / 2;
+        const halfH = this.product.originalHeight / 2;
+        const frameSize = Math.max(this.product.originalWidth, this.product.originalHeight) + 20;
+        const cornerSize = 12;
+        
+        // Save context state
+        this.ctx.save();
+        
+        // Draw outer frame (subtle dashed border) - acts as boundary guide
+        this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.35)';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([10, 5]);
+        this.ctx.strokeRect(
+            centerX - frameSize / 2,
+            centerY - frameSize / 2,
+            frameSize,
+            frameSize
+        );
+        
+        // Draw inner frame (product size reference)
+        this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.65)';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([6, 3]);
+        this.ctx.strokeRect(
+            centerX - halfW - 5,
+            centerY - halfH - 5,
+            this.product.originalWidth + 10,
+            this.product.originalHeight + 10
+        );
+        
+        // Draw corner indicators (L-shaped markers)
+        this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.8)';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.setLineDash([]);
+        
+        // Top-left corner
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX - halfW - 5, centerY - halfH - 5);
+        this.ctx.lineTo(centerX - halfW - 5, centerY - halfH - 5 + cornerSize);
+        this.ctx.moveTo(centerX - halfW - 5, centerY - halfH - 5);
+        this.ctx.lineTo(centerX - halfW - 5 + cornerSize, centerY - halfH - 5);
+        this.ctx.stroke();
+        
+        // Top-right corner
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + halfW + 5, centerY - halfH - 5);
+        this.ctx.lineTo(centerX + halfW + 5, centerY - halfH - 5 + cornerSize);
+        this.ctx.moveTo(centerX + halfW + 5, centerY - halfH - 5);
+        this.ctx.lineTo(centerX + halfW + 5 - cornerSize, centerY - halfH - 5);
+        this.ctx.stroke();
+        
+        // Bottom-left corner
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX - halfW - 5, centerY + halfH + 5);
+        this.ctx.lineTo(centerX - halfW - 5, centerY + halfH + 5 - cornerSize);
+        this.ctx.moveTo(centerX - halfW - 5, centerY + halfH + 5);
+        this.ctx.lineTo(centerX - halfW - 5 + cornerSize, centerY + halfH + 5);
+        this.ctx.stroke();
+        
+        // Bottom-right corner
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + halfW + 5, centerY + halfH + 5);
+        this.ctx.lineTo(centerX + halfW + 5, centerY + halfH + 5 - cornerSize);
+        this.ctx.moveTo(centerX + halfW + 5, centerY + halfH + 5);
+        this.ctx.lineTo(centerX + halfW + 5 - cornerSize, centerY + halfH + 5);
+        this.ctx.stroke();
+        
+        // Draw crosshair lines (center alignment guides)
+        this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.55)';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.setLineDash([4, 4]);
+        
+        // Horizontal line
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX - 60, centerY);
+        this.ctx.lineTo(centerX + 60, centerY);
+        this.ctx.stroke();
+        
+        // Vertical line
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX, centerY - 60);
+        this.ctx.lineTo(centerX, centerY + 60);
+        this.ctx.stroke();
+        
+        // Draw center point with glow effect
+        // Outer glow
+        this.ctx.fillStyle = 'rgba(102, 126, 234, 0.15)';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, 10, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Inner glow
+        this.ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, 6, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Center point
+        this.ctx.fillStyle = 'rgba(102, 126, 234, 0.95)';
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, 3.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Draw subtle shadow/outline for better visibility
+        this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([]);
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
+        this.ctx.stroke();
+        
+        // Restore context state
+        this.ctx.restore();
+    }
+    
     reset() {
-        this.product.x = 400;
-        this.product.y = 400;
+        this.product.x = this.originalCenter.x;
+        this.product.y = this.originalCenter.y;
         this.product.width = this.product.originalWidth;
         this.product.height = this.product.originalHeight;
         
