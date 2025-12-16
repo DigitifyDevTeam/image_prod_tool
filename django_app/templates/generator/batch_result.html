@@ -294,6 +294,23 @@ class ModalPreviewEditor {
             aspectRatio: 1
         };
         
+        // Fixed frame center position (NEVER changes)
+        this.frameCenter = {
+            x: 400,
+            y: 400
+        };
+        
+        // FIXED reference frame - never changes
+        this.fixedFrame = {
+            centerX: 400,
+            centerY: 400,
+            width: 350,
+            height: 350
+        };
+        
+        // Show reference frame
+        this.showGuides = true;
+        
         // Drag state
         this.isDragging = false;
         this.dragOffset = { x: 0, y: 0 };
@@ -427,6 +444,10 @@ class ModalPreviewEditor {
             this.product.originalHeight = this.product.height;
             this.product.aspectRatio = this.product.width / this.product.height;
             
+            // Store fixed frame dimensions (these NEVER change)
+            this.fixedFrame.width = this.product.width;
+            this.fixedFrame.height = this.product.height;
+            
             // Update inputs
             this.widthInput.value = this.product.width;
             this.heightInput.value = this.product.height;
@@ -513,6 +534,88 @@ class ModalPreviewEditor {
             const size = this.resizePicto(picto.img, 100);
             this.ctx.drawImage(picto.img, picto.x, picto.y, size.width, size.height);
         }
+        
+        // Draw original center reference frame - ON TOP so it's always visible
+        this.drawCenterReferenceFrame();
+    }
+    
+    drawCenterReferenceFrame() {
+        if (!this.showGuides) return;
+        
+        // Use FIXED frame values - these never change
+        // Fallback to product dimensions if fixedFrame not set yet
+        const centerX = this.fixedFrame?.centerX || 400;  // Always 400
+        const centerY = this.fixedFrame?.centerY || 400;  // Always 400
+        const frameW = this.fixedFrame?.width || this.product?.originalWidth || 350;
+        const frameH = this.fixedFrame?.height || this.product?.originalHeight || 350;
+        
+        // Validate dimensions
+        if (!frameW || !frameH || frameW <= 0 || frameH <= 0) {
+            return;
+        }
+        
+        // Frame color - BRIGHT RED for maximum visibility
+        const frameColor = '#ff0000';
+        
+        // Save context state
+        this.ctx.save();
+        
+        // ===== FIXED BORDER FRAME - Simple thin outline =====
+        const frameX = centerX - frameW / 2;
+        const frameY = centerY - frameH / 2;
+        
+        // Draw the frame border - THICK RED LINE for maximum visibility
+        this.ctx.strokeStyle = frameColor;
+        this.ctx.lineWidth = 5; // Very thick for visibility
+        this.ctx.globalAlpha = 1.0; // Full opacity
+        this.ctx.lineJoin = 'miter';
+        this.ctx.miterLimit = 10;
+        
+        // Draw simple rectangle (most reliable)
+        this.ctx.beginPath();
+        this.ctx.rect(frameX, frameY, frameW, frameH);
+        this.ctx.stroke();
+        
+        // Draw again with rounded corners for better appearance
+        const cornerRadius = 8;
+        this.ctx.beginPath();
+        this.roundRect(frameX, frameY, frameW, frameH, cornerRadius);
+        this.ctx.stroke();
+        
+        // ===== CENTER CROSSHAIR - Small "+" marker =====
+        const crossSize = 15; // Larger for visibility
+        
+        this.ctx.strokeStyle = frameColor;
+        this.ctx.lineWidth = 4; // Thick for visibility
+        this.ctx.lineCap = 'round';
+        
+        // Horizontal line
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX - crossSize, centerY);
+        this.ctx.lineTo(centerX + crossSize, centerY);
+        this.ctx.stroke();
+        
+        // Vertical line
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX, centerY - crossSize);
+        this.ctx.lineTo(centerX, centerY + crossSize);
+        this.ctx.stroke();
+        
+        // Restore context state
+        this.ctx.restore();
+    }
+    
+    // Helper: rounded rectangle
+    roundRect(x, y, w, h, r) {
+        this.ctx.moveTo(x + r, y);
+        this.ctx.lineTo(x + w - r, y);
+        this.ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        this.ctx.lineTo(x + w, y + h - r);
+        this.ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        this.ctx.lineTo(x + r, y + h);
+        this.ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        this.ctx.lineTo(x, y + r);
+        this.ctx.quadraticCurveTo(x, y, x + r, y);
     }
     
     reset() {
@@ -537,8 +640,14 @@ class ModalPreviewEditor {
             return;
         }
         
-        const finalFilename = cleanFilename.endsWith('.png') ? cleanFilename : cleanFilename + '.png';
+        const finalFilename = cleanFilename.endsWith('.webp') ? cleanFilename : cleanFilename + '.webp';
         
+        // Temporarily hide guides for clean export
+        const guidesWereVisible = this.showGuides;
+        this.showGuides = false;
+        this.render();
+        
+        // Export canvas
         this.canvas.toBlob((blob) => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -548,7 +657,11 @@ class ModalPreviewEditor {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-        }, 'image/png');
+            
+            // Restore guides visibility
+            this.showGuides = guidesWereVisible;
+            this.render();
+        }, 'image/webp', 0.95);
     }
 }
 

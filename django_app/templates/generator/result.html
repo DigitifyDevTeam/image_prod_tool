@@ -78,6 +78,136 @@
         font-size: 0.85rem;
         margin-top: 10px;
     }
+    
+    /* Position Indicator Styles - Modern Glassmorphism */
+    .position-indicator {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(10px);
+        background: linear-gradient(135deg, rgba(15, 15, 25, 0.92), rgba(25, 25, 45, 0.88));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 16px;
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+        font-size: 13px;
+        color: #fff;
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+            0 1px 0 rgba(255, 255, 255, 0.1) inset;
+    }
+    .position-indicator.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    .position-indicator.snapped {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.92), rgba(5, 150, 105, 0.88));
+        border-color: rgba(52, 211, 153, 0.5);
+        box-shadow: 
+            0 8px 32px rgba(16, 185, 129, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+            0 0 30px rgba(16, 185, 129, 0.2);
+    }
+    .position-indicator .coord {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .position-indicator .coord-label {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 500;
+    }
+    .position-indicator .coord-value {
+        color: #a78bfa;
+        font-weight: 700;
+        font-size: 14px;
+        min-width: 45px;
+        text-align: right;
+    }
+    .position-indicator.snapped .coord-value {
+        color: #fff;
+    }
+    .position-indicator .divider {
+        width: 1px;
+        height: 24px;
+        background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent);
+    }
+    .position-indicator .snap-icon {
+        display: none;
+        color: #34d399;
+        font-size: 16px;
+    }
+    .position-indicator.snapped .snap-icon {
+        display: inline-flex;
+        animation: snapPulse 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes snapPulse {
+        0% { transform: scale(1.8); opacity: 0; }
+        60% { transform: scale(0.95); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    
+    /* Distance Badge */
+    .position-indicator .distance-badge {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.7);
+    }
+    .position-indicator .distance-badge strong {
+        color: #fbbf24;
+        font-weight: 600;
+    }
+    .position-indicator.snapped .distance-badge {
+        background: rgba(255, 255, 255, 0.15);
+    }
+    .position-indicator.snapped .distance-badge strong {
+        color: #fff;
+    }
+    
+    /* Guide Toggle Button */
+    .guide-toggle {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(102, 126, 234, 0.4);
+        border-radius: 8px;
+        padding: 6px 12px;
+        color: #fff;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        z-index: 10;
+    }
+    .guide-toggle:hover {
+        background: rgba(102, 126, 234, 0.3);
+        border-color: #667eea;
+    }
+    .guide-toggle.active {
+        background: rgba(102, 126, 234, 0.5);
+        border-color: #667eea;
+    }
+    .guide-toggle i {
+        font-size: 12px;
+    }
 </style>
 
 <div class="row justify-content-center">
@@ -121,6 +251,26 @@
                         
                         <div class="preview-canvas-wrapper" id="canvasWrapper">
                             <canvas id="previewCanvas" width="800" height="800"></canvas>
+                            <button class="guide-toggle active" id="guideToggle" title="Toggle reference guides">
+                                <i class="fas fa-crosshairs"></i>
+                                <span>Guides</span>
+                            </button>
+                            <div class="position-indicator" id="positionIndicator">
+                                <span class="snap-icon"><i class="fas fa-crosshairs"></i></span>
+                                <div class="coord">
+                                    <span class="coord-label">X</span>
+                                    <span class="coord-value" id="deltaX">+0</span>
+                                </div>
+                                <div class="divider"></div>
+                                <div class="coord">
+                                    <span class="coord-label">Y</span>
+                                    <span class="coord-value" id="deltaY">+0</span>
+                                </div>
+                                <div class="divider"></div>
+                                <div class="distance-badge">
+                                    <i class="fas fa-ruler me-1"></i><strong id="distanceValue">0</strong>px
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="preview-controls">
@@ -150,7 +300,7 @@
                                     <i class="fas fa-download me-1"></i>Download Custom
                                 </button>
                             </div>
-                            <p class="editing-hint"><i class="fas fa-info-circle me-1"></i>Drag the product image to reposition it. Use the controls above to resize.</p>
+                            <p class="editing-hint"><i class="fas fa-info-circle me-1"></i>Drag the product image to reposition. The reference frame shows original position. Click <strong>Guides</strong> to toggle visibility.</p>
                         </div>
                     </div>
                 </div>
@@ -244,15 +394,48 @@ class PreviewEditor {
             y: 400
         };
         
+        // FIXED reference frame - never changes
+        this.fixedFrame = {
+            centerX: 400,
+            centerY: 400,
+            width: 350,
+            height: 350
+        };
+        
         // Drag state
         this.isDragging = false;
         this.dragOffset = { x: 0, y: 0 };
         
+        // Guide visibility
+        this.showGuides = true;
+        this.snapThreshold = 15; // Snap distance in pixels
+        this.isSnapped = false;
+        
+        // UI Elements
+        this.positionIndicator = document.getElementById('positionIndicator');
+        this.deltaXEl = document.getElementById('deltaX');
+        this.deltaYEl = document.getElementById('deltaY');
+        this.distanceEl = document.getElementById('distanceValue');
+        this.guideToggle = document.getElementById('guideToggle');
+        
         // Bind events
         this.bindEvents();
         
+        // Start animation loop
+        this.startAnimationLoop();
+        
         // Load images
         this.loadImages();
+    }
+    
+    startAnimationLoop() {
+        // Simple render - no continuous animation needed for fixed frame
+        this.render();
+    }
+    
+    hasMoved() {
+        return Math.abs(this.product.x - this.originalCenter.x) > 1 || 
+               Math.abs(this.product.y - this.originalCenter.y) > 1;
     }
     
     bindEvents() {
@@ -271,6 +454,35 @@ class PreviewEditor {
         // Size inputs
         document.getElementById('productWidth').addEventListener('input', (e) => this.onWidthChange(e));
         document.getElementById('productHeight').addEventListener('input', (e) => this.onHeightChange(e));
+        
+        // Guide toggle
+        this.guideToggle.addEventListener('click', () => this.toggleGuides());
+    }
+    
+    toggleGuides() {
+        this.showGuides = !this.showGuides;
+        this.guideToggle.classList.toggle('active', this.showGuides);
+        this.render();
+    }
+    
+    updatePositionIndicator() {
+        const deltaX = Math.round(this.product.x - this.originalCenter.x);
+        const deltaY = Math.round(this.product.y - this.originalCenter.y);
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        this.isSnapped = distance < this.snapThreshold;
+        
+        // Update display
+        this.deltaXEl.textContent = (deltaX >= 0 ? '+' : '') + deltaX;
+        this.deltaYEl.textContent = (deltaY >= 0 ? '+' : '') + deltaY;
+        this.distanceEl.textContent = Math.round(distance);
+        
+        // Toggle snapped state
+        this.positionIndicator.classList.toggle('snapped', this.isSnapped);
+        
+        // Show/hide based on dragging or moved state
+        const shouldShow = this.isDragging || this.hasMoved();
+        this.positionIndicator.classList.toggle('visible', shouldShow);
     }
     
     getCanvasCoords(e) {
@@ -309,11 +521,24 @@ class PreviewEditor {
         this.product.x = coords.x - this.dragOffset.x;
         this.product.y = coords.y - this.dragOffset.y;
         
+        // Snap to center if within threshold
+        const deltaX = Math.abs(this.product.x - this.originalCenter.x);
+        const deltaY = Math.abs(this.product.y - this.originalCenter.y);
+        
+        if (deltaX < this.snapThreshold && deltaY < this.snapThreshold) {
+            // Visual snap - make it easier to align to center
+            if (deltaX < 5) this.product.x = this.originalCenter.x;
+            if (deltaY < 5) this.product.y = this.originalCenter.y;
+        }
+        
         // Keep within bounds
         const halfW = this.product.width / 2;
         const halfH = this.product.height / 2;
         this.product.x = Math.max(halfW, Math.min(800 - halfW, this.product.x));
         this.product.y = Math.max(halfH, Math.min(800 - halfH, this.product.y));
+        
+        // Update position indicator
+        this.updatePositionIndicator();
         
         this.render();
     }
@@ -321,6 +546,13 @@ class PreviewEditor {
     onMouseUp() {
         this.isDragging = false;
         this.canvas.style.cursor = 'move';
+        
+        // Keep indicator visible if moved from original position
+        setTimeout(() => {
+            if (!this.hasMoved()) {
+                this.positionIndicator.classList.remove('visible');
+            }
+        }, 100);
     }
     
     onTouchStart(e) {
@@ -384,6 +616,10 @@ class PreviewEditor {
             // Update original center reference to match initial position
             this.originalCenter.x = this.product.x;
             this.originalCenter.y = this.product.y;
+            
+            // Store fixed frame dimensions (these NEVER change)
+            this.fixedFrame.width = this.product.width;
+            this.fixedFrame.height = this.product.height;
             
             // Update input fields
             document.getElementById('productWidth').value = this.product.width;
@@ -459,9 +695,6 @@ class PreviewEditor {
             this.ctx.fillRect(0, 0, 800, 800);
         }
         
-        // Draw original center reference frame (compass guide)
-        this.drawCenterReferenceFrame();
-        
         // Draw product (centered at x,y)
         if (this.productImg) {
             const drawX = this.product.x - this.product.width / 2;
@@ -480,124 +713,88 @@ class PreviewEditor {
             const size = this.resizePicto(picto.img, 100);
             this.ctx.drawImage(picto.img, picto.x, picto.y, size.width, size.height);
         }
+        
+        // Draw original center reference frame - ON TOP so it's always visible
+        this.drawCenterReferenceFrame();
     }
     
     drawCenterReferenceFrame() {
-        const centerX = this.originalCenter.x;
-        const centerY = this.originalCenter.y;
-        const halfW = this.product.originalWidth / 2;
-        const halfH = this.product.originalHeight / 2;
-        const frameSize = Math.max(this.product.originalWidth, this.product.originalHeight) + 20;
-        const cornerSize = 12;
+        if (!this.showGuides) return;
+        
+        // Use FIXED frame values - these never change
+        // Fallback to product dimensions if fixedFrame not set yet
+        const centerX = this.fixedFrame?.centerX || 400;  // Always 400
+        const centerY = this.fixedFrame?.centerY || 400;  // Always 400
+        const frameW = this.fixedFrame?.width || this.product?.originalWidth || 350;
+        const frameH = this.fixedFrame?.height || this.product?.originalHeight || 350;
+        
+        // Validate dimensions
+        if (!frameW || !frameH || frameW <= 0 || frameH <= 0) {
+            return;
+        }
+        
+        // Frame color - BRIGHT RED for maximum visibility
+        const frameColor = '#ff0000';
         
         // Save context state
         this.ctx.save();
         
-        // Draw outer frame (subtle dashed border) - acts as boundary guide
-        this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.35)';
-        this.ctx.lineWidth = 2;
-        this.ctx.setLineDash([10, 5]);
-        this.ctx.strokeRect(
-            centerX - frameSize / 2,
-            centerY - frameSize / 2,
-            frameSize,
-            frameSize
-        );
+        // ===== FIXED BORDER FRAME - Simple thin outline =====
+        const frameX = centerX - frameW / 2;
+        const frameY = centerY - frameH / 2;
         
-        // Draw inner frame (product size reference)
-        this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.65)';
-        this.ctx.lineWidth = 2;
-        this.ctx.setLineDash([6, 3]);
-        this.ctx.strokeRect(
-            centerX - halfW - 5,
-            centerY - halfH - 5,
-            this.product.originalWidth + 10,
-            this.product.originalHeight + 10
-        );
+        // Draw the frame border - THICK RED LINE for maximum visibility
+        this.ctx.strokeStyle = frameColor;
+        this.ctx.lineWidth = 5; // Very thick for visibility
+        this.ctx.globalAlpha = 1.0; // Full opacity
+        this.ctx.lineJoin = 'miter';
+        this.ctx.miterLimit = 10;
         
-        // Draw corner indicators (L-shaped markers)
-        this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.8)';
-        this.ctx.lineWidth = 2.5;
-        this.ctx.setLineDash([]);
-        
-        // Top-left corner
+        // Draw simple rectangle
         this.ctx.beginPath();
-        this.ctx.moveTo(centerX - halfW - 5, centerY - halfH - 5);
-        this.ctx.lineTo(centerX - halfW - 5, centerY - halfH - 5 + cornerSize);
-        this.ctx.moveTo(centerX - halfW - 5, centerY - halfH - 5);
-        this.ctx.lineTo(centerX - halfW - 5 + cornerSize, centerY - halfH - 5);
+        this.ctx.rect(frameX, frameY, frameW, frameH);
         this.ctx.stroke();
         
-        // Top-right corner
+        // Draw again with rounded corners for better appearance
+        const cornerRadius = 8;
         this.ctx.beginPath();
-        this.ctx.moveTo(centerX + halfW + 5, centerY - halfH - 5);
-        this.ctx.lineTo(centerX + halfW + 5, centerY - halfH - 5 + cornerSize);
-        this.ctx.moveTo(centerX + halfW + 5, centerY - halfH - 5);
-        this.ctx.lineTo(centerX + halfW + 5 - cornerSize, centerY - halfH - 5);
+        this.roundRect(frameX, frameY, frameW, frameH, cornerRadius);
         this.ctx.stroke();
         
-        // Bottom-left corner
-        this.ctx.beginPath();
-        this.ctx.moveTo(centerX - halfW - 5, centerY + halfH + 5);
-        this.ctx.lineTo(centerX - halfW - 5, centerY + halfH + 5 - cornerSize);
-        this.ctx.moveTo(centerX - halfW - 5, centerY + halfH + 5);
-        this.ctx.lineTo(centerX - halfW - 5 + cornerSize, centerY + halfH + 5);
-        this.ctx.stroke();
+        // ===== CENTER CROSSHAIR - Small "+" marker =====
+        const crossSize = 15; // Larger for visibility
         
-        // Bottom-right corner
-        this.ctx.beginPath();
-        this.ctx.moveTo(centerX + halfW + 5, centerY + halfH + 5);
-        this.ctx.lineTo(centerX + halfW + 5, centerY + halfH + 5 - cornerSize);
-        this.ctx.moveTo(centerX + halfW + 5, centerY + halfH + 5);
-        this.ctx.lineTo(centerX + halfW + 5 - cornerSize, centerY + halfH + 5);
-        this.ctx.stroke();
-        
-        // Draw crosshair lines (center alignment guides)
-        this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.55)';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.setLineDash([4, 4]);
+        this.ctx.strokeStyle = frameColor;
+        this.ctx.lineWidth = 4; // Thick for visibility
+        this.ctx.lineCap = 'round';
         
         // Horizontal line
         this.ctx.beginPath();
-        this.ctx.moveTo(centerX - 60, centerY);
-        this.ctx.lineTo(centerX + 60, centerY);
+        this.ctx.moveTo(centerX - crossSize, centerY);
+        this.ctx.lineTo(centerX + crossSize, centerY);
         this.ctx.stroke();
         
         // Vertical line
         this.ctx.beginPath();
-        this.ctx.moveTo(centerX, centerY - 60);
-        this.ctx.lineTo(centerX, centerY + 60);
-        this.ctx.stroke();
-        
-        // Draw center point with glow effect
-        // Outer glow
-        this.ctx.fillStyle = 'rgba(102, 126, 234, 0.15)';
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, 10, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        // Inner glow
-        this.ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, 6, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        // Center point
-        this.ctx.fillStyle = 'rgba(102, 126, 234, 0.95)';
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, 3.5, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        // Draw subtle shadow/outline for better visibility
-        this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-        this.ctx.lineWidth = 1;
-        this.ctx.setLineDash([]);
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
+        this.ctx.moveTo(centerX, centerY - crossSize);
+        this.ctx.lineTo(centerX, centerY + crossSize);
         this.ctx.stroke();
         
         // Restore context state
         this.ctx.restore();
+    }
+    
+    // Helper: rounded rectangle
+    roundRect(x, y, w, h, r) {
+        this.ctx.moveTo(x + r, y);
+        this.ctx.lineTo(x + w - r, y);
+        this.ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        this.ctx.lineTo(x + w, y + h - r);
+        this.ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        this.ctx.lineTo(x + r, y + h);
+        this.ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        this.ctx.lineTo(x, y + r);
+        this.ctx.quadraticCurveTo(x, y, x + r, y);
     }
     
     reset() {
@@ -608,6 +805,9 @@ class PreviewEditor {
         
         document.getElementById('productWidth').value = this.product.width;
         document.getElementById('productHeight').value = this.product.height;
+        
+        // Hide position indicator
+        this.positionIndicator.classList.remove('visible', 'snapped');
         
         this.render();
     }
@@ -623,7 +823,12 @@ class PreviewEditor {
             return;
         }
         
-        const finalFilename = cleanFilename.endsWith('.png') ? cleanFilename : cleanFilename + '.png';
+        const finalFilename = cleanFilename.endsWith('.webp') ? cleanFilename : cleanFilename + '.webp';
+        
+        // Temporarily hide guides for clean export
+        const guidesWereVisible = this.showGuides;
+        this.showGuides = false;
+        this.render();
         
         // Export canvas
         this.canvas.toBlob((blob) => {
@@ -635,7 +840,11 @@ class PreviewEditor {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-        }, 'image/png');
+            
+            // Restore guides visibility
+            this.showGuides = guidesWereVisible;
+            this.render();
+        }, 'image/webp', 0.95);
     }
 }
 
@@ -646,3 +855,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
