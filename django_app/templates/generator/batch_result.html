@@ -25,6 +25,13 @@
         border-radius: 10px;
         overflow: hidden;
         cursor: move;
+        width: 440px;  /* Fixed width: 800 * 0.55 = 440px */
+        height: 440px; /* Fixed height: 800 * 0.55 = 440px */
+    }
+    #modalPreviewCanvas {
+        display: block;
+        width: 440px !important;  /* Fixed display width */
+        height: 440px !important; /* Fixed display height */
     }
     .preview-controls {
         background: rgba(255,255,255,0.1);
@@ -72,6 +79,20 @@
         background: linear-gradient(45deg, #27ae60, #2ecc71);
         border: none;
         color: white;
+    }
+    .btn-mirror {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        border: none;
+        color: white;
+    }
+    .btn-mirror:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    .btn-mirror.active {
+        background: linear-gradient(45deg, #764ba2, #667eea);
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.6);
     }
     .editing-hint {
         color: #a0a0a0;
@@ -209,6 +230,11 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="col-auto">
+                            <button class="btn btn-sm btn-preview btn-mirror" id="modalMirrorBtn" onclick="modalPreviewEditor.flipHorizontal()" title="Inverser l'image horizontalement">
+                                <i class="fas fa-arrows-alt-h me-1"></i>Inverser
+                            </button>
+                        </div>
                     </div>
                     <div class="mt-3">
                         <button class="btn btn-preview btn-reset me-2" onclick="modalPreviewEditor.reset()">
@@ -272,10 +298,15 @@ class ModalPreviewEditor {
         this.heightInput = document.getElementById(heightInputId);
         this.lockRatioCheckbox = document.getElementById(lockRatioId);
         
-        // Canvas dimensions (scaled for display)
+        // Canvas dimensions - FIXED and NEVER changes
+        // Internal canvas size is always 800x800 pixels
+        this.canvas.width = 800;  // Fixed internal width
+        this.canvas.height = 800; // Fixed internal height
+        
+        // Display scale (55% for display in modal)
         this.displayScale = 0.55;
-        this.canvas.style.width = (800 * this.displayScale) + 'px';
-        this.canvas.style.height = (800 * this.displayScale) + 'px';
+        this.canvas.style.width = '440px';   // Fixed display width: 800 * 0.55
+        this.canvas.style.height = '440px';  // Fixed display height: 800 * 0.55
         
         // Images
         this.backgroundImg = null;
@@ -291,7 +322,8 @@ class ModalPreviewEditor {
             height: 350,
             originalWidth: 350,
             originalHeight: 350,
-            aspectRatio: 1
+            aspectRatio: 1,
+            flipped: false  // Track if image is horizontally flipped
         };
         
         // Fixed frame center position (NEVER changes)
@@ -300,13 +332,14 @@ class ModalPreviewEditor {
             y: 400
         };
         
-        // FIXED reference frame - never changes
-        this.fixedFrame = {
+        // FIXED reference frame - ALWAYS 450x450, NEVER changes
+        // Using Object.freeze to make it immutable
+        this.fixedFrame = Object.freeze({
             centerX: 400,
             centerY: 400,
             width: 450,
             height: 450
-        };
+        });
         
         // Show reference frame
         this.showGuides = true;
@@ -314,6 +347,9 @@ class ModalPreviewEditor {
         // Drag state
         this.isDragging = false;
         this.dragOffset = { x: 0, y: 0 };
+        
+        // Prevent recursive updates
+        this.isUpdatingInput = false;
         
         // Bind events
         this.bindEvents();
@@ -333,6 +369,17 @@ class ModalPreviewEditor {
         // Size inputs
         this.widthInput.addEventListener('input', (e) => this.onWidthChange(e));
         this.heightInput.addEventListener('input', (e) => this.onHeightChange(e));
+        
+        // Lock ratio checkbox - update aspect ratio when toggled
+        this.lockRatioCheckbox.addEventListener('change', (e) => this.onLockRatioToggle(e));
+    }
+    
+    onLockRatioToggle(e) {
+        // When lock is turned ON, update aspect ratio based on current dimensions
+        if (e.target.checked && this.product.width > 0 && this.product.height > 0) {
+            this.product.aspectRatio = this.product.width / this.product.height;
+        }
+        // When lock is turned OFF, allow free resizing (aspect ratio will update on next change)
     }
     
     getCanvasCoords(e) {
@@ -398,22 +445,68 @@ class ModalPreviewEditor {
     }
     
     onWidthChange(e) {
+        // Prevent recursive updates
+        if (this.isUpdatingInput) return;
+        
         const newWidth = parseInt(e.target.value) || 350;
-        this.product.width = newWidth;
-        if (this.lockRatioCheckbox.checked) {
-            this.product.height = Math.round(newWidth / this.product.aspectRatio);
-            this.heightInput.value = this.product.height;
+        
+        // Clamp to valid range
+        const clampedWidth = Math.max(50, Math.min(700, newWidth));
+        if (clampedWidth !== newWidth) {
+            this.isUpdatingInput = true;
+            e.target.value = clampedWidth;
+            this.isUpdatingInput = false;
         }
+        
+        this.product.width = clampedWidth;
+        
+        if (this.lockRatioCheckbox.checked) {
+            // Lock aspect ratio: adjust height based on width
+            this.product.height = Math.round(clampedWidth / this.product.aspectRatio);
+            // Update height input without triggering its change event
+            this.isUpdatingInput = true;
+            this.heightInput.value = this.product.height;
+            this.isUpdatingInput = false;
+        } else {
+            // Free resize: update aspect ratio based on current dimensions
+            if (this.product.height > 0) {
+                this.product.aspectRatio = this.product.width / this.product.height;
+            }
+        }
+        
         this.render();
     }
     
     onHeightChange(e) {
+        // Prevent recursive updates
+        if (this.isUpdatingInput) return;
+        
         const newHeight = parseInt(e.target.value) || 350;
-        this.product.height = newHeight;
-        if (this.lockRatioCheckbox.checked) {
-            this.product.width = Math.round(newHeight * this.product.aspectRatio);
-            this.widthInput.value = this.product.width;
+        
+        // Clamp to valid range
+        const clampedHeight = Math.max(50, Math.min(700, newHeight));
+        if (clampedHeight !== newHeight) {
+            this.isUpdatingInput = true;
+            e.target.value = clampedHeight;
+            this.isUpdatingInput = false;
         }
+        
+        this.product.height = clampedHeight;
+        
+        if (this.lockRatioCheckbox.checked) {
+            // Lock aspect ratio: adjust width based on height
+            this.product.width = Math.round(clampedHeight * this.product.aspectRatio);
+            // Update width input without triggering its change event
+            this.isUpdatingInput = true;
+            this.widthInput.value = this.product.width;
+            this.isUpdatingInput = false;
+        } else {
+            // Free resize: update aspect ratio based on current dimensions
+            if (this.product.width > 0) {
+                this.product.aspectRatio = this.product.width / this.product.height;
+            }
+        }
+        
         this.render();
     }
     
@@ -424,6 +517,13 @@ class ModalPreviewEditor {
             this.horizontalPictos = [];
             this.product.x = 400;
             this.product.y = 400;
+            this.product.flipped = false;  // Reset flip state when loading new product
+            
+            // Reset mirror button state
+            const mirrorBtn = document.getElementById('modalMirrorBtn');
+            if (mirrorBtn) {
+                mirrorBtn.classList.remove('active');
+            }
             
             // Load background
             this.backgroundImg = await this.loadImage('/backgrounds/background.jpg');
@@ -444,9 +544,8 @@ class ModalPreviewEditor {
             this.product.originalHeight = this.product.height;
             this.product.aspectRatio = this.product.width / this.product.height;
             
-            // Store fixed frame dimensions (these NEVER change)
-            this.fixedFrame.width = this.product.width;
-            this.fixedFrame.height = this.product.height;
+            // NOTE: fixedFrame dimensions are ALWAYS 450x450 - set in constructor
+            // We do NOT modify them based on product image dimensions
             
             // Update inputs
             this.widthInput.value = this.product.width;
@@ -522,7 +621,22 @@ class ModalPreviewEditor {
         if (this.productImg) {
             const drawX = this.product.x - this.product.width / 2;
             const drawY = this.product.y - this.product.height / 2;
+            
+            // Save context state
+            this.ctx.save();
+            
+            if (this.product.flipped) {
+                // Flip horizontally around the center point (product.x, product.y)
+                // This keeps the image in the same position
+                this.ctx.translate(this.product.x, this.product.y);
+                this.ctx.scale(-1, 1);
+                this.ctx.translate(-this.product.x, -this.product.y);
+            }
+            
             this.ctx.drawImage(this.productImg, drawX, drawY, this.product.width, this.product.height);
+            
+            // Restore context state
+            this.ctx.restore();
         }
         
         for (const picto of this.verticalPictos) {
@@ -542,17 +656,12 @@ class ModalPreviewEditor {
     drawCenterReferenceFrame() {
         if (!this.showGuides) return;
         
-        // Use FIXED frame values - these never change
-        // Fallback to product dimensions if fixedFrame not set yet
-        const centerX = this.fixedFrame?.centerX || 400;  // Always 400
-        const centerY = this.fixedFrame?.centerY || 400;  // Always 400
-        const frameW = this.fixedFrame?.width || this.product?.originalWidth || 350;
-        const frameH = this.fixedFrame?.height || this.product?.originalHeight || 350;
-        
-        // Validate dimensions
-        if (!frameW || !frameH || frameW <= 0 || frameH <= 0) {
-            return;
-        }
+        // FIXED frame values - ALWAYS 450x450, NEVER changes regardless of image dimensions
+        // These values are hardcoded and will NEVER be affected by product image dimensions
+        const centerX = 400;  // Fixed center X coordinate
+        const centerY = 400;  // Fixed center Y coordinate
+        const frameW = 450;   // Fixed width - ALWAYS 450 pixels
+        const frameH = 450;   // Fixed height - ALWAYS 450 pixels
         
         // Frame color - BRIGHT RED for maximum visibility
         const frameColor = '#ff0000';
@@ -560,9 +669,9 @@ class ModalPreviewEditor {
         // Save context state
         this.ctx.save();
         
-        // ===== FIXED BORDER FRAME - Simple thin outline =====
-        const frameX = centerX - frameW / 2;
-        const frameY = centerY - frameH / 2;
+        // ===== FIXED BORDER FRAME - Always 450x450 square =====
+        const frameX = centerX - frameW / 2;  // 400 - 225 = 175
+        const frameY = centerY - frameH / 2;  // 400 - 225 = 175
         
         // Draw the frame border - THICK RED LINE for maximum visibility
         this.ctx.strokeStyle = frameColor;
@@ -571,7 +680,7 @@ class ModalPreviewEditor {
         this.ctx.lineJoin = 'miter';
         this.ctx.miterLimit = 10;
         
-        // Draw simple rectangle (most reliable)
+        // Draw the fixed 450x450 rectangle - this NEVER changes
         this.ctx.beginPath();
         this.ctx.rect(frameX, frameY, frameW, frameH);
         this.ctx.stroke();
@@ -623,10 +732,31 @@ class ModalPreviewEditor {
         this.product.y = 400;
         this.product.width = this.product.originalWidth;
         this.product.height = this.product.originalHeight;
+        this.product.flipped = false;  // Reset flip state
         
         this.widthInput.value = this.product.width;
         this.heightInput.value = this.product.height;
         
+        // Update mirror button state
+        const mirrorBtn = document.getElementById('modalMirrorBtn');
+        if (mirrorBtn) {
+            mirrorBtn.classList.remove('active');
+        }
+        
+        this.render();
+    }
+    
+    flipHorizontal() {
+        // Toggle flip state
+        this.product.flipped = !this.product.flipped;
+        
+        // Update button visual state
+        const mirrorBtn = document.getElementById('modalMirrorBtn');
+        if (mirrorBtn) {
+            mirrorBtn.classList.toggle('active', this.product.flipped);
+        }
+        
+        // Re-render with new flip state
         this.render();
     }
     

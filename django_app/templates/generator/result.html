@@ -17,9 +17,13 @@
         border-radius: 10px;
         overflow: hidden;
         cursor: move;
+        width: 480px;  /* Fixed width: 800 * 0.6 = 480px */
+        height: 480px; /* Fixed height: 800 * 0.6 = 480px */
     }
     #previewCanvas {
         display: block;
+        width: 480px !important;  /* Fixed display width */
+        height: 480px !important; /* Fixed display height */
     }
     .preview-controls {
         background: rgba(255,255,255,0.1);
@@ -72,6 +76,20 @@
         background: linear-gradient(45deg, #27ae60, #2ecc71);
         border: none;
         color: white;
+    }
+    .btn-mirror {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        border: none;
+        color: white;
+    }
+    .btn-mirror:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    .btn-mirror.active {
+        background: linear-gradient(45deg, #764ba2, #667eea);
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.6);
     }
     .editing-hint {
         color: #a0a0a0;
@@ -291,6 +309,11 @@
                                         </label>
                                     </div>
                                 </div>
+                                <div class="col-auto">
+                                    <button class="btn btn-sm btn-preview btn-mirror" id="mirrorBtn" onclick="previewEditor.flipHorizontal()" title="Inverser l'image horizontalement">
+                                        <i class="fas fa-arrows-alt-h me-1"></i>Inverser
+                                    </button>
+                                </div>
                             </div>
                             <div class="mt-3">
                                 <button class="btn btn-preview btn-reset me-2" onclick="previewEditor.reset()">
@@ -366,10 +389,15 @@ class PreviewEditor {
         this.ctx = this.canvas.getContext('2d');
         this.options = options;
         
-        // Canvas dimensions (scaled for display)
-        this.displayScale = 0.6; // 60% of original for display
-        this.canvas.style.width = (800 * this.displayScale) + 'px';
-        this.canvas.style.height = (800 * this.displayScale) + 'px';
+        // Canvas dimensions - FIXED and NEVER changes
+        // Internal canvas size is always 800x800 pixels
+        this.canvas.width = 800;  // Fixed internal width
+        this.canvas.height = 800; // Fixed internal height
+        
+        // Display scale (60% for display)
+        this.displayScale = 0.6;
+        this.canvas.style.width = '480px';   // Fixed display width: 800 * 0.6
+        this.canvas.style.height = '480px';  // Fixed display height: 800 * 0.6
         
         // Images
         this.backgroundImg = null;
@@ -385,7 +413,8 @@ class PreviewEditor {
             height: 350,
             originalWidth: 350,
             originalHeight: 350,
-            aspectRatio: 1
+            aspectRatio: 1,
+            flipped: false  // Track if image is horizontally flipped
         };
         
         // Original center position (reference frame)
@@ -394,17 +423,21 @@ class PreviewEditor {
             y: 400
         };
         
-        // FIXED reference frame - never changes
-        this.fixedFrame = {
+        // FIXED reference frame - ALWAYS 450x450, NEVER changes
+        // These values are immutable and will never be modified
+        this.fixedFrame = Object.freeze({
             centerX: 400,
             centerY: 400,
             width: 450,
             height: 450
-        };
+        });
         
         // Drag state
         this.isDragging = false;
         this.dragOffset = { x: 0, y: 0 };
+        
+        // Prevent recursive updates
+        this.isUpdatingInput = false;
         
         // Guide visibility
         this.showGuides = true;
@@ -455,8 +488,19 @@ class PreviewEditor {
         document.getElementById('productWidth').addEventListener('input', (e) => this.onWidthChange(e));
         document.getElementById('productHeight').addEventListener('input', (e) => this.onHeightChange(e));
         
+        // Lock ratio checkbox - update aspect ratio when toggled
+        document.getElementById('lockAspectRatio').addEventListener('change', (e) => this.onLockRatioToggle(e));
+        
         // Guide toggle
         this.guideToggle.addEventListener('click', () => this.toggleGuides());
+    }
+    
+    onLockRatioToggle(e) {
+        // When lock is turned ON, update aspect ratio based on current dimensions
+        if (e.target.checked && this.product.width > 0 && this.product.height > 0) {
+            this.product.aspectRatio = this.product.width / this.product.height;
+        }
+        // When lock is turned OFF, allow free resizing (aspect ratio will update on next change)
     }
     
     toggleGuides() {
@@ -569,26 +613,70 @@ class PreviewEditor {
     }
     
     onWidthChange(e) {
+        // Prevent recursive updates
+        if (this.isUpdatingInput) return;
+        
         const newWidth = parseInt(e.target.value) || 350;
         const lockRatio = document.getElementById('lockAspectRatio').checked;
         
-        this.product.width = newWidth;
-        if (lockRatio) {
-            this.product.height = Math.round(newWidth / this.product.aspectRatio);
-            document.getElementById('productHeight').value = this.product.height;
+        // Clamp to valid range
+        const clampedWidth = Math.max(50, Math.min(700, newWidth));
+        if (clampedWidth !== newWidth) {
+            this.isUpdatingInput = true;
+            e.target.value = clampedWidth;
+            this.isUpdatingInput = false;
         }
+        
+        this.product.width = clampedWidth;
+        
+        if (lockRatio) {
+            // Lock aspect ratio: adjust height based on width
+            this.product.height = Math.round(clampedWidth / this.product.aspectRatio);
+            // Update height input without triggering its change event
+            this.isUpdatingInput = true;
+            document.getElementById('productHeight').value = this.product.height;
+            this.isUpdatingInput = false;
+        } else {
+            // Free resize: update aspect ratio based on current dimensions
+            if (this.product.height > 0) {
+                this.product.aspectRatio = this.product.width / this.product.height;
+            }
+        }
+        
         this.render();
     }
     
     onHeightChange(e) {
+        // Prevent recursive updates
+        if (this.isUpdatingInput) return;
+        
         const newHeight = parseInt(e.target.value) || 350;
         const lockRatio = document.getElementById('lockAspectRatio').checked;
         
-        this.product.height = newHeight;
-        if (lockRatio) {
-            this.product.width = Math.round(newHeight * this.product.aspectRatio);
-            document.getElementById('productWidth').value = this.product.width;
+        // Clamp to valid range
+        const clampedHeight = Math.max(50, Math.min(700, newHeight));
+        if (clampedHeight !== newHeight) {
+            this.isUpdatingInput = true;
+            e.target.value = clampedHeight;
+            this.isUpdatingInput = false;
         }
+        
+        this.product.height = clampedHeight;
+        
+        if (lockRatio) {
+            // Lock aspect ratio: adjust width based on height
+            this.product.width = Math.round(clampedHeight * this.product.aspectRatio);
+            // Update width input without triggering its change event
+            this.isUpdatingInput = true;
+            document.getElementById('productWidth').value = this.product.width;
+            this.isUpdatingInput = false;
+        } else {
+            // Free resize: update aspect ratio based on current dimensions
+            if (this.product.width > 0) {
+                this.product.aspectRatio = this.product.width / this.product.height;
+            }
+        }
+        
         this.render();
     }
     
@@ -697,7 +785,22 @@ class PreviewEditor {
         if (this.productImg) {
             const drawX = this.product.x - this.product.width / 2;
             const drawY = this.product.y - this.product.height / 2;
+            
+            // Save context state
+            this.ctx.save();
+            
+            if (this.product.flipped) {
+                // Flip horizontally around the center point (product.x, product.y)
+                // This keeps the image in the same position
+                this.ctx.translate(this.product.x, this.product.y);
+                this.ctx.scale(-1, 1);
+                this.ctx.translate(-this.product.x, -this.product.y);
+            }
+            
             this.ctx.drawImage(this.productImg, drawX, drawY, this.product.width, this.product.height);
+            
+            // Restore context state
+            this.ctx.restore();
         }
         
         // Draw vertical pictos
@@ -719,16 +822,12 @@ class PreviewEditor {
     drawCenterReferenceFrame() {
         if (!this.showGuides) return;
         
-        // Use FIXED frame values - always 450x450, centered at 400,400
-        const centerX = this.fixedFrame?.centerX || 400;  // Always 400
-        const centerY = this.fixedFrame?.centerY || 400;  // Always 400
-        const frameW = 450;  // Always 450
-        const frameH = 450;  // Always 450
-        
-        // Validate dimensions
-        if (!frameW || !frameH || frameW <= 0 || frameH <= 0) {
-            return;
-        }
+        // FIXED frame values - ALWAYS 450x450, NEVER changes regardless of image dimensions
+        // These values are hardcoded and will NEVER be affected by product image dimensions
+        const centerX = 400;  // Fixed center X coordinate
+        const centerY = 400;  // Fixed center Y coordinate
+        const frameW = 450;   // Fixed width - ALWAYS 450 pixels
+        const frameH = 450;   // Fixed height - ALWAYS 450 pixels
         
         // Frame color - BRIGHT RED for maximum visibility
         const frameColor = '#ff0000';
@@ -736,9 +835,9 @@ class PreviewEditor {
         // Save context state
         this.ctx.save();
         
-        // ===== FIXED BORDER FRAME - Simple thin outline =====
-        const frameX = centerX - frameW / 2;
-        const frameY = centerY - frameH / 2;
+        // ===== FIXED BORDER FRAME - Always 450x450 square =====
+        const frameX = centerX - frameW / 2;  // 400 - 225 = 175
+        const frameY = centerY - frameH / 2;  // 400 - 225 = 175
         
         // Draw the frame border - THICK RED LINE for maximum visibility
         this.ctx.strokeStyle = frameColor;
@@ -747,7 +846,7 @@ class PreviewEditor {
         this.ctx.lineJoin = 'miter';
         this.ctx.miterLimit = 10;
         
-        // Draw simple rectangle
+        // Draw the fixed 450x450 rectangle - this NEVER changes
         this.ctx.beginPath();
         this.ctx.rect(frameX, frameY, frameW, frameH);
         this.ctx.stroke();
@@ -799,13 +898,34 @@ class PreviewEditor {
         this.product.y = this.originalCenter.y;
         this.product.width = this.product.originalWidth;
         this.product.height = this.product.originalHeight;
+        this.product.flipped = false;  // Reset flip state
         
         document.getElementById('productWidth').value = this.product.width;
         document.getElementById('productHeight').value = this.product.height;
         
+        // Update mirror button state
+        const mirrorBtn = document.getElementById('mirrorBtn');
+        if (mirrorBtn) {
+            mirrorBtn.classList.remove('active');
+        }
+        
         // Hide position indicator
         this.positionIndicator.classList.remove('visible', 'snapped');
         
+        this.render();
+    }
+    
+    flipHorizontal() {
+        // Toggle flip state
+        this.product.flipped = !this.product.flipped;
+        
+        // Update button visual state
+        const mirrorBtn = document.getElementById('mirrorBtn');
+        if (mirrorBtn) {
+            mirrorBtn.classList.toggle('active', this.product.flipped);
+        }
+        
+        // Re-render with new flip state
         this.render();
     }
     
