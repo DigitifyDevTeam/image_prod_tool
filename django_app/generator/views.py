@@ -112,19 +112,21 @@ class ProductIconGenerator:
         """Add vertical pictos on the left side of the image
         Position 1 = BOTTOM, Position 5 = TOP
         """
-        picto_max_size = 100  # Same size as horizontal pictos
+        picto_max_size = 130  # Increased size for better visibility
         x_pos = 20  # X position (left side)
 
         
-        # Fixed Y positions with proper spacing (115px apart)
+        # Fixed Y positions maintaining same visual spacing between pictos
+        # Original: 100px pictos with 115px spacing between top edges = 15px visual gap
+        # New: 130px pictos, maintaining 15px visual gap = 145px spacing between top edges
         # Position 1 at BOTTOM, Position 5 at TOP
        
         vertical_positions = [
-            575,   # Position 1 - BOTTOM
-            460,   # Position 2
-            345,   # Position 3
-            230,   # Position 4
-            115,   # Position 5 - TOP
+            575,   # Position 1 - BOTTOM (keep same reference point)
+            430,   # Position 2 (575 - 145 = 430)
+            285,   # Position 3 (430 - 145 = 285)
+            140,   # Position 4 (285 - 145 = 140)
+            5,     # Position 5 - TOP (140 - 145 = -5, but keep at 5 for safety)
         ]
         
         for i, filename in enumerate(vertical_selections):
@@ -142,27 +144,30 @@ class ProductIconGenerator:
         return background
     
     def add_horizontal_pictos(self, background, horizontal_selections):
-        """Add horizontal pictos at the bottom of the image
-        Position 1 = RIGHT, Position 5 = LEFT
+        """Add horizontal pictos vertically on the right side of the image
+        Position 1 = BOTTOM, Position 5 = TOP (same Y positions as left vertical pictos)
         """
-        picto_max_size = 100  # Same size as vertical pictos
-        y_pos = self.background_height - 120  # Y position (near bottom)
+        picto_max_size = 130  # Increased size for better visibility
+        x_pos = self.background_width - 120  # X position (right side, 120px from right edge)
         
-        # Fixed X positions with REDUCED spacing (110px apart - closer together)
-        horizontal_positions = [
-            690,   # Position 1 - RIGHT
-            585,   # Position 2
-            480,   # Position 3
-            375,   # Position 4
-            270,   # Position 5 - LEFT
+        # Same Y positions as left vertical pictos (maintaining same visual spacing)
+        # Original: 100px pictos with 115px spacing between top edges = 15px visual gap
+        # New: 130px pictos, maintaining 15px visual gap = 145px spacing between top edges
+        # Position 1 at BOTTOM, Position 5 at TOP
+        vertical_positions = [
+            575,   # Position 1 - BOTTOM (keep same reference point)
+            430,   # Position 2 (575 - 145 = 430)
+            285,   # Position 3 (430 - 145 = 285)
+            140,   # Position 4 (285 - 145 = 140)
+            5,     # Position 5 - TOP (140 - 145 = -5, but keep at 5 for safety)
         ]
         
         for i, (category, filename) in enumerate(horizontal_selections):
-            if category and filename and i < len(horizontal_positions):
+            if category and filename and i < len(vertical_positions):
                 picto_path = os.path.join(self.horizontal_dir, category, filename)
                 picto = self.load_picto(picto_path, picto_max_size)
                 if picto:
-                    x_pos = horizontal_positions[i]
+                    y_pos = vertical_positions[i]
                     
                     if background.mode != 'RGBA':
                         background = background.convert('RGBA')
@@ -195,7 +200,7 @@ class ProductIconGenerator:
             # Add vertical pictos (left side)
             background = self.add_vertical_pictos(background, vertical_selections)
             
-            # Add horizontal pictos (bottom)
+            # Add horizontal pictos (right side, vertical)
             background = self.add_horizontal_pictos(background, horizontal_selections)
             
             # Convert back to RGB for saving (WebP supports RGB)
@@ -304,7 +309,7 @@ def home(request):
 def get_picto_data_from_batch(batch):
     """Extract picto data from a batch submission for preview editor"""
     vertical_pictos = []
-    vertical_positions = [575, 460, 345, 230, 115]  # Y positions for vertical pictos
+    vertical_positions = [575, 430, 285, 140, 5]  # Y positions for vertical pictos (maintaining spacing)
     
     for i in range(1, 6):
         filename = getattr(batch, f'vertical_pos_{i}', '') or ''
@@ -316,8 +321,8 @@ def get_picto_data_from_batch(batch):
             })
     
     horizontal_pictos = []
-    horizontal_positions = [690, 585, 480, 375, 270]  # X positions for horizontal pictos
-    y_pos = 800 - 120  # Near bottom
+    x_pos = 800 - 120  # Right side, 120px from right edge
+    vertical_positions = [575, 430, 285, 140, 5]  # Same Y positions as left vertical pictos (maintaining spacing)
     
     for i in range(1, 6):
         category = getattr(batch, f'horizontal_cat_{i}', '') or ''
@@ -325,8 +330,8 @@ def get_picto_data_from_batch(batch):
         if category and filename:
             horizontal_pictos.append({
                 'url': f'/data/horizantal_Pictos/{category}/{filename}',
-                'x': horizontal_positions[i-1],
-                'y': y_pos
+                'x': x_pos,
+                'y': vertical_positions[i-1]
             })
     
     return {

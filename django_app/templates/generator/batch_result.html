@@ -640,12 +640,12 @@ class ModalPreviewEditor {
         }
         
         for (const picto of this.verticalPictos) {
-            const size = this.resizePicto(picto.img, 100);
+            const size = this.resizePicto(picto.img, 130);
             this.ctx.drawImage(picto.img, picto.x, picto.y, size.width, size.height);
         }
         
         for (const picto of this.horizontalPictos) {
-            const size = this.resizePicto(picto.img, 100);
+            const size = this.resizePicto(picto.img, 130);
             this.ctx.drawImage(picto.img, picto.x, picto.y, size.width, size.height);
         }
         
