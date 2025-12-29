@@ -9,7 +9,7 @@ from .models import ProductSubmission, BatchSubmission
 import os
 import sys
 import json
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import requests
 from io import BytesIO
 
@@ -111,6 +111,7 @@ class ProductIconGenerator:
     def add_vertical_pictos(self, background, vertical_selections):
         """Add vertical pictos on the left side of the image
         Position 1 = BOTTOM, Position 5 = TOP
+        Automatically includes "Made in USA" if not already selected
         """
         picto_max_size = 130  # Increased size for better visibility
         x_pos = 20  # X position (left side)
@@ -129,6 +130,38 @@ class ProductIconGenerator:
             5,     # Position 5 - TOP (140 - 145 = -5, but keep at 5 for safety)
         ]
         
+        # Automatically include "Made in USA" if not already selected
+        made_in_usa = 'madeinusa.webp'
+        made_in_usa_selected = False
+        
+        # Check if madeinusa.webp is already in selections
+        for filename in vertical_selections:
+            if filename and filename.lower() == made_in_usa.lower():
+                made_in_usa_selected = True
+                break
+        
+        # If not selected and file exists, add it to the first available position (prefer position 1)
+        if not made_in_usa_selected:
+            made_in_usa_path = os.path.join(self.vertical_dir, made_in_usa)
+            if os.path.exists(made_in_usa_path):
+                # Ensure vertical_selections has at least 5 positions
+                while len(vertical_selections) < 5:
+                    vertical_selections.append('')
+                
+                # Prefer position 1 (bottom), otherwise find first empty position
+                if not vertical_selections[0]:
+                    vertical_selections[0] = made_in_usa
+                else:
+                    # Find first empty position
+                    for i in range(len(vertical_selections)):
+                        if not vertical_selections[i]:
+                            vertical_selections[i] = made_in_usa
+                            break
+                    else:
+                        # If all positions are filled, replace position 1 with Made in USA
+                        vertical_selections[0] = made_in_usa
+        
+        # Render all selected pictos
         for i, filename in enumerate(vertical_selections):
             if filename and i < len(vertical_positions):
                 picto_path = os.path.join(self.vertical_dir, filename)
@@ -307,18 +340,64 @@ def home(request):
 
 
 def get_picto_data_from_batch(batch):
-    """Extract picto data from a batch submission for preview editor"""
+    """Extract picto data from a batch submission for preview editor
+    Automatically includes "Made in USA" if not already selected
+    """
     vertical_pictos = []
     vertical_positions = [575, 430, 285, 140, 5]  # Y positions for vertical pictos (maintaining spacing)
+    made_in_usa = 'madeinusa.webp'
+    made_in_usa_found = False
     
+    # Collect vertical pictos from batch
+    batch_vertical_selections = []
     for i in range(1, 6):
         filename = getattr(batch, f'vertical_pos_{i}', '') or ''
+        batch_vertical_selections.append(filename)
         if filename:
+            if filename.lower() == made_in_usa.lower():
+                made_in_usa_found = True
             vertical_pictos.append({
                 'url': f'/data/Vertical_pictos/{filename}',
                 'x': 20,
                 'y': vertical_positions[i-1]
             })
+    
+    # Automatically add "Made in USA" if not already selected
+    if not made_in_usa_found:
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        vertical_dir = os.path.join(base_dir, 'Data', 'Vertical_pictos')
+        made_in_usa_path = os.path.join(vertical_dir, made_in_usa)
+        
+        if os.path.exists(made_in_usa_path):
+            # Find first available position (prefer position 1)
+            added = False
+            if not batch_vertical_selections[0]:
+                # Add at position 1 (bottom)
+                vertical_pictos.insert(0, {
+                    'url': f'/data/Vertical_pictos/{made_in_usa}',
+                    'x': 20,
+                    'y': vertical_positions[0]
+                })
+                added = True
+            else:
+                # Find first empty position
+                for i in range(len(batch_vertical_selections)):
+                    if not batch_vertical_selections[i]:
+                        vertical_pictos.append({
+                            'url': f'/data/Vertical_pictos/{made_in_usa}',
+                            'x': 20,
+                            'y': vertical_positions[i]
+                        })
+                        added = True
+                        break
+            
+            # If all positions are filled, add it at position 1 anyway
+            if not added:
+                vertical_pictos.insert(0, {
+                    'url': f'/data/Vertical_pictos/{made_in_usa}',
+                    'x': 20,
+                    'y': vertical_positions[0]
+                })
     
     horizontal_pictos = []
     x_pos = 800 - 120  # Right side, 120px from right edge

@@ -2,6 +2,16 @@
 
 A Django web application for generating branded product images with icons, containerized with Docker.
 
+## 📖 What This Tool Does
+
+- **J'ai créé un système de traitement d'images par lots** : téléchargez plusieurs images de produits à la fois et traitez-les toutes ensemble
+- **J'ai créé un système d'icônes double** : ajoutez des pictos verticaux sur le côté gauche et des pictos horizontaux sur le côté droit
+- **J'ai créé 5 emplacements de position** : chaque côté a 5 positions (du bas vers le haut) pour placer différentes icônes
+- **J'ai créé une sélection d'icônes dynamique** : les menus déroulants se remplissent automatiquement à partir de vos dossiers d'icônes
+- **J'ai créé un éditeur de prévisualisation interactif** : glissez, redimensionnez et retournez les images de produits avec un éditeur basé sur canvas
+- **J'ai créé une sortie WebP** : génère des images WebP de haute qualité (95% de qualité) pour une taille de fichier optimale
+- **J'ai créé un système conteneurisé Docker** : déploiement facile avec Docker Compose, pas besoin de configuration Python locale
+
 ## 🚀 Quick Start with Docker
 
 ### Prerequisites
@@ -179,6 +189,46 @@ sudo docker compose up --build
 - Change default passwords in production
 - Use strong `SECRET_KEY` in production
 - Set `DEBUG=False` in production
+
+## 🎯 Core Features
+
+- **Vertical Pictos (Left Side)**: Select from icons in `Data/Vertical_pictos/` folder (e.g., "0% THC", "Made in France", "Bio")
+- **Horizontal Pictos (Right Side)**: Choose category first (CBD, CBG, Sativa, Indica, etc.), then select specific file
+- **Category-Based Icons**: Horizontal pictos organized by product type with percentage/strength variants
+- **Background Image**: Custom 800x800px background image with product centered automatically
+- **Product Resizing**: Products automatically resized to max 350px while preserving aspect ratio
+- **Transparency Support**: Product images maintain transparency (no white background frame)
+- **Batch Management**: All images in a batch share the same icon configuration
+
+## 🛠️ Technical Architecture
+
+- **Backend**: Django 4.2+ framework with SQLite database (MySQL supported)
+- **Image Processing**: Pillow (PIL) library for image manipulation and composition
+- **Frontend**: Bootstrap 5 UI with Font Awesome icons and vanilla JavaScript
+- **Canvas Editor**: HTML5 Canvas API for interactive preview and editing
+- **File Storage**: Django's default storage system for uploaded and generated images
+- **Docker Setup**: Python 3.12-slim base image with automatic migrations on startup
+- **API Endpoints**: RESTful API for dynamic file loading based on category selection
+
+## 📋 User Workflow
+
+- **Step 1**: Upload multiple product images using the file input (supports JPG, PNG, GIF, WEBP)
+- **Step 2**: Select 5 vertical pictos from dropdown menus (left side positions)
+- **Step 3**: Select 5 horizontal pictos by choosing category then file (right side positions)
+- **Step 4**: Click "Generate Product Images" to process all uploaded images
+- **Step 5**: View batch results page showing original and generated images side-by-side
+- **Step 6**: Click "Edit" button to open interactive preview editor for customization
+- **Step 7**: Download individual images or custom-edited versions with custom filenames
+
+## 📁 Project Structure Details
+
+- **Data/Vertical_pictos/**: Contains all left-side icon files (scanned dynamically for dropdown)
+- **Data/horizantal_Pictos/**: Contains category subfolders (CBD, CBG, Sativa, etc.) with icon files
+- **backgrounds/**: Stores background image files (background.jpg or background.png)
+- **generator/models.py**: Database models (BatchSubmission, ProductSubmission)
+- **generator/views.py**: Image processing logic and ProductIconGenerator class
+- **generator/forms.py**: Dynamic form generation that scans icon folders
+- **templates/generator/**: HTML templates with Bootstrap styling and JavaScript functionality
 
 ## 📚 Additional Documentation
 
