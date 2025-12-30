@@ -130,13 +130,19 @@ class ProductIconGenerator:
             5,     # Position 5 - TOP (140 - 145 = -5, but keep at 5 for safety)
         ]
         
+        # Filter out empty strings and None values - only keep explicitly selected pictos
+        cleaned_selections = []
+        for i, filename in enumerate(vertical_selections):
+            if filename and filename.strip():  # Only include non-empty, non-whitespace values
+                cleaned_selections.append((i, filename.strip()))
+        
         # Automatically include "Made in USA" if not already selected
         made_in_usa = 'madeinusa.webp'
         made_in_usa_selected = False
         
         # Check if madeinusa.webp is already in selections
-        for filename in vertical_selections:
-            if filename and filename.lower() == made_in_usa.lower():
+        for _, filename in cleaned_selections:
+            if filename.lower() == made_in_usa.lower():
                 made_in_usa_selected = True
                 break
         
@@ -144,30 +150,27 @@ class ProductIconGenerator:
         if not made_in_usa_selected:
             made_in_usa_path = os.path.join(self.vertical_dir, made_in_usa)
             if os.path.exists(made_in_usa_path):
-                # Ensure vertical_selections has at least 5 positions
-                while len(vertical_selections) < 5:
-                    vertical_selections.append('')
+                # Find first available position (prefer position 0)
+                available_positions = set(range(5))
+                used_positions = {pos for pos, _ in cleaned_selections}
+                available_positions = available_positions - used_positions
                 
-                # Prefer position 1 (bottom), otherwise find first empty position
-                if not vertical_selections[0]:
-                    vertical_selections[0] = made_in_usa
+                if available_positions:
+                    # Prefer position 0 (bottom), otherwise use first available
+                    target_pos = 0 if 0 in available_positions else min(available_positions)
+                    cleaned_selections.append((target_pos, made_in_usa))
                 else:
-                    # Find first empty position
-                    for i in range(len(vertical_selections)):
-                        if not vertical_selections[i]:
-                            vertical_selections[i] = made_in_usa
-                            break
-                    else:
-                        # If all positions are filled, replace position 1 with Made in USA
-                        vertical_selections[0] = made_in_usa
+                    # If all positions are filled, replace position 0 with Made in USA
+                    cleaned_selections = [(pos, filename) if pos != 0 else (0, made_in_usa) 
+                                         for pos, filename in cleaned_selections]
         
-        # Render all selected pictos
-        for i, filename in enumerate(vertical_selections):
-            if filename and i < len(vertical_positions):
+        # Render all selected pictos at their specified positions
+        for pos, filename in cleaned_selections:
+            if pos < len(vertical_positions):
                 picto_path = os.path.join(self.vertical_dir, filename)
                 picto = self.load_picto(picto_path, picto_max_size)
                 if picto:
-                    y_pos = vertical_positions[i]
+                    y_pos = vertical_positions[pos]
                     
                     if background.mode != 'RGBA':
                         background = background.convert('RGBA')
@@ -348,12 +351,14 @@ def get_picto_data_from_batch(batch):
     made_in_usa = 'madeinusa.webp'
     made_in_usa_found = False
     
-    # Collect vertical pictos from batch
+    # Collect vertical pictos from batch - only include non-empty selections
     batch_vertical_selections = []
     for i in range(1, 6):
         filename = getattr(batch, f'vertical_pos_{i}', '') or ''
-        batch_vertical_selections.append(filename)
-        if filename:
+        # Filter out empty strings and whitespace-only values
+        if filename and filename.strip():
+            filename = filename.strip()
+            batch_vertical_selections.append(filename)
             if filename.lower() == made_in_usa.lower():
                 made_in_usa_found = True
             vertical_pictos.append({
@@ -361,6 +366,8 @@ def get_picto_data_from_batch(batch):
                 'x': 20,
                 'y': vertical_positions[i-1]
             })
+        else:
+            batch_vertical_selections.append('')  # Mark position as empty
     
     # Automatically add "Made in USA" if not already selected
     if not made_in_usa_found:
@@ -369,10 +376,10 @@ def get_picto_data_from_batch(batch):
         made_in_usa_path = os.path.join(vertical_dir, made_in_usa)
         
         if os.path.exists(made_in_usa_path):
-            # Find first available position (prefer position 1)
+            # Find first available position (prefer position 0)
             added = False
             if not batch_vertical_selections[0]:
-                # Add at position 1 (bottom)
+                # Add at position 0 (bottom)
                 vertical_pictos.insert(0, {
                     'url': f'/data/Vertical_pictos/{made_in_usa}',
                     'x': 20,
@@ -391,7 +398,7 @@ def get_picto_data_from_batch(batch):
                         added = True
                         break
             
-            # If all positions are filled, add it at position 1 anyway
+            # If all positions are filled, add it at position 0 anyway
             if not added:
                 vertical_pictos.insert(0, {
                     'url': f'/data/Vertical_pictos/{made_in_usa}',
