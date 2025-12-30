@@ -111,7 +111,7 @@ class ProductIconGenerator:
     def add_vertical_pictos(self, background, vertical_selections):
         """Add vertical pictos on the left side of the image
         Position 1 = BOTTOM, Position 5 = TOP
-        Automatically includes "Made in USA" if not already selected
+        Only renders explicitly selected pictos - no automatic additions
         """
         picto_max_size = 130  # Increased size for better visibility
         x_pos = 20  # X position (left side)
@@ -131,46 +131,14 @@ class ProductIconGenerator:
         ]
         
         # Filter out empty strings and None values - only keep explicitly selected pictos
-        cleaned_selections = []
+        # NO automatic additions - only render what the user explicitly selected
         for i, filename in enumerate(vertical_selections):
-            if filename and filename.strip():  # Only include non-empty, non-whitespace values
-                cleaned_selections.append((i, filename.strip()))
-        
-        # Automatically include "Made in USA" if not already selected
-        made_in_usa = 'madeinusa.webp'
-        made_in_usa_selected = False
-        
-        # Check if madeinusa.webp is already in selections
-        for _, filename in cleaned_selections:
-            if filename.lower() == made_in_usa.lower():
-                made_in_usa_selected = True
-                break
-        
-        # If not selected and file exists, add it to the first available position (prefer position 1)
-        if not made_in_usa_selected:
-            made_in_usa_path = os.path.join(self.vertical_dir, made_in_usa)
-            if os.path.exists(made_in_usa_path):
-                # Find first available position (prefer position 0)
-                available_positions = set(range(5))
-                used_positions = {pos for pos, _ in cleaned_selections}
-                available_positions = available_positions - used_positions
-                
-                if available_positions:
-                    # Prefer position 0 (bottom), otherwise use first available
-                    target_pos = 0 if 0 in available_positions else min(available_positions)
-                    cleaned_selections.append((target_pos, made_in_usa))
-                else:
-                    # If all positions are filled, replace position 0 with Made in USA
-                    cleaned_selections = [(pos, filename) if pos != 0 else (0, made_in_usa) 
-                                         for pos, filename in cleaned_selections]
-        
-        # Render all selected pictos at their specified positions
-        for pos, filename in cleaned_selections:
-            if pos < len(vertical_positions):
+            if filename and filename.strip() and i < len(vertical_positions):
+                filename = filename.strip()
                 picto_path = os.path.join(self.vertical_dir, filename)
                 picto = self.load_picto(picto_path, picto_max_size)
                 if picto:
-                    y_pos = vertical_positions[pos]
+                    y_pos = vertical_positions[i]
                     
                     if background.mode != 'RGBA':
                         background = background.convert('RGBA')
@@ -344,67 +312,23 @@ def home(request):
 
 def get_picto_data_from_batch(batch):
     """Extract picto data from a batch submission for preview editor
-    Automatically includes "Made in USA" if not already selected
+    Only includes explicitly selected pictos - no automatic additions
     """
     vertical_pictos = []
     vertical_positions = [575, 430, 285, 140, 5]  # Y positions for vertical pictos (maintaining spacing)
-    made_in_usa = 'madeinusa.webp'
-    made_in_usa_found = False
     
     # Collect vertical pictos from batch - only include non-empty selections
-    batch_vertical_selections = []
+    # NO automatic additions - only what the user explicitly selected
     for i in range(1, 6):
         filename = getattr(batch, f'vertical_pos_{i}', '') or ''
         # Filter out empty strings and whitespace-only values
         if filename and filename.strip():
             filename = filename.strip()
-            batch_vertical_selections.append(filename)
-            if filename.lower() == made_in_usa.lower():
-                made_in_usa_found = True
             vertical_pictos.append({
                 'url': f'/data/Vertical_pictos/{filename}',
                 'x': 20,
                 'y': vertical_positions[i-1]
             })
-        else:
-            batch_vertical_selections.append('')  # Mark position as empty
-    
-    # Automatically add "Made in USA" if not already selected
-    if not made_in_usa_found:
-        base_dir = os.path.dirname(os.path.dirname(__file__))
-        vertical_dir = os.path.join(base_dir, 'Data', 'Vertical_pictos')
-        made_in_usa_path = os.path.join(vertical_dir, made_in_usa)
-        
-        if os.path.exists(made_in_usa_path):
-            # Find first available position (prefer position 0)
-            added = False
-            if not batch_vertical_selections[0]:
-                # Add at position 0 (bottom)
-                vertical_pictos.insert(0, {
-                    'url': f'/data/Vertical_pictos/{made_in_usa}',
-                    'x': 20,
-                    'y': vertical_positions[0]
-                })
-                added = True
-            else:
-                # Find first empty position
-                for i in range(len(batch_vertical_selections)):
-                    if not batch_vertical_selections[i]:
-                        vertical_pictos.append({
-                            'url': f'/data/Vertical_pictos/{made_in_usa}',
-                            'x': 20,
-                            'y': vertical_positions[i]
-                        })
-                        added = True
-                        break
-            
-            # If all positions are filled, add it at position 0 anyway
-            if not added:
-                vertical_pictos.insert(0, {
-                    'url': f'/data/Vertical_pictos/{made_in_usa}',
-                    'x': 20,
-                    'y': vertical_positions[0]
-                })
     
     horizontal_pictos = []
     x_pos = 800 - 120  # Right side, 120px from right edge
