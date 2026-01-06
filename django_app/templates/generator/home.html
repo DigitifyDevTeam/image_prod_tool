@@ -36,28 +36,53 @@
                     <!-- Vertical Pictos Section -->
                     <div class="mb-4">
                         <h5 class="mb-3"><i class="fas fa-arrows-alt-v me-2"></i>Vertical Pictos (Left Side)</h5>
-                        <p class="text-muted">Select pictos to display on the left side of the image, stacked vertically from bottom to top.</p>
+                        <p class="text-muted">Select pictos to display on the left side of the image, stacked vertically from bottom to top. You can also import custom webp images.</p>
                         
                         <div class="row">
                             <div class="col-md-6 col-lg-4 mb-3">
                                 <label class="form-label">Position 1</label>
-                                {{ form.vertical_pos_1 }}
+                                <div class="d-flex gap-2">
+                                    {{ form.vertical_pos_1 }}
+                                    <button type="button" class="btn btn-sm btn-outline-primary import-picto-btn" data-position="1" data-bs-toggle="modal" data-bs-target="#importPictoModal">
+                                        <i class="fas fa-upload"></i> Import
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-md-6 col-lg-4 mb-3">
                                 <label class="form-label">Position 2</label>
-                                {{ form.vertical_pos_2 }}
+                                <div class="d-flex gap-2">
+                                    {{ form.vertical_pos_2 }}
+                                    <button type="button" class="btn btn-sm btn-outline-primary import-picto-btn" data-position="2" data-bs-toggle="modal" data-bs-target="#importPictoModal">
+                                        <i class="fas fa-upload"></i> Import
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-md-6 col-lg-4 mb-3">
                                 <label class="form-label">Position 3</label>
-                                {{ form.vertical_pos_3 }}
+                                <div class="d-flex gap-2">
+                                    {{ form.vertical_pos_3 }}
+                                    <button type="button" class="btn btn-sm btn-outline-primary import-picto-btn" data-position="3" data-bs-toggle="modal" data-bs-target="#importPictoModal">
+                                        <i class="fas fa-upload"></i> Import
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-md-6 col-lg-4 mb-3">
                                 <label class="form-label">Position 4</label>
-                                {{ form.vertical_pos_4 }}
+                                <div class="d-flex gap-2">
+                                    {{ form.vertical_pos_4 }}
+                                    <button type="button" class="btn btn-sm btn-outline-primary import-picto-btn" data-position="4" data-bs-toggle="modal" data-bs-target="#importPictoModal">
+                                        <i class="fas fa-upload"></i> Import
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-md-6 col-lg-4 mb-3">
                                 <label class="form-label">Position 5 (Top)</label>
-                                {{ form.vertical_pos_5 }}
+                                <div class="d-flex gap-2">
+                                    {{ form.vertical_pos_5 }}
+                                    <button type="button" class="btn btn-sm btn-outline-primary import-picto-btn" data-position="5" data-bs-toggle="modal" data-bs-target="#importPictoModal">
+                                        <i class="fas fa-upload"></i> Import
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -216,6 +241,66 @@
     </div>
 </div>
 
+<!-- Import Picto Modal -->
+<div class="modal fade" id="importPictoModal" tabindex="-1" aria-labelledby="importPictoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importPictoModalLabel">
+                    <i class="fas fa-upload me-2"></i>Import Custom Picto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Position: <strong id="importPositionLabel">-</strong></label>
+                </div>
+                <div class="mb-3">
+                    <label for="pictoFileInput" class="form-label">Select WebP Image</label>
+                    <input type="file" class="form-control" id="pictoFileInput" accept=".webp" required>
+                    <div class="form-text">Only .webp files are allowed. Maximum file size: 5MB</div>
+                </div>
+                <div id="uploadStatus" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="uploadPictoBtn">
+                    <i class="fas fa-upload me-2"></i>Upload
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Save Permanently Modal -->
+<div class="modal fade" id="savePermanentlyModal" tabindex="-1" aria-labelledby="savePermanentlyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="savePermanentlyModalLabel">
+                    <i class="fas fa-save me-2"></i>Save Picto Permanently
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Do you want to save this picto permanently? It will be added to your picto library for future use.</p>
+                <div class="mb-3">
+                    <label for="pictoNameInput" class="form-label">Enter Picto Name</label>
+                    <input type="text" class="form-control" id="pictoNameInput" placeholder="e.g., My Custom Picto" required>
+                    <div class="form-text">This name will be used to identify the picto in the list</div>
+                </div>
+                <div id="saveStatus" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="skipSaveBtn">Skip</button>
+                <button type="button" class="btn btn-primary" id="savePermanentlyBtn">
+                    <i class="fas fa-save me-2"></i>Save Permanently
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Show selected file count
@@ -264,7 +349,299 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Error fetching files:', error);
                     fileSelect.innerHTML = '<option value="">-- Error loading files --</option>';
                 });
+            });
+    });
+    
+    // Import Picto functionality
+    let currentImportPosition = null;
+    const importModal = document.getElementById('importPictoModal');
+    const importPositionLabel = document.getElementById('importPositionLabel');
+    const pictoFileInput = document.getElementById('pictoFileInput');
+    const uploadPictoBtn = document.getElementById('uploadPictoBtn');
+    const uploadStatus = document.getElementById('uploadStatus');
+    
+    // Handle import button clicks
+    document.querySelectorAll('.import-picto-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            currentImportPosition = this.dataset.position;
+            importPositionLabel.textContent = `Position ${currentImportPosition}`;
+            pictoFileInput.value = '';
+            uploadStatus.innerHTML = '';
         });
+    });
+    
+    // Handle file upload
+    uploadPictoBtn.addEventListener('click', function() {
+        if (!currentImportPosition) {
+            uploadStatus.innerHTML = '<div class="alert alert-danger">Error: No position selected</div>';
+            return;
+        }
+        
+        const file = pictoFileInput.files[0];
+        if (!file) {
+            uploadStatus.innerHTML = '<div class="alert alert-warning">Please select a file</div>';
+            return;
+        }
+        
+        // Validate file extension
+        if (!file.name.toLowerCase().endsWith('.webp')) {
+            uploadStatus.innerHTML = '<div class="alert alert-danger">Only .webp files are allowed</div>';
+            return;
+        }
+        
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            uploadStatus.innerHTML = '<div class="alert alert-danger">File size exceeds 5MB limit</div>';
+            return;
+        }
+        
+        // Disable button and show loading
+        uploadPictoBtn.disabled = true;
+        uploadPictoBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+        uploadStatus.innerHTML = '<div class="alert alert-info">Uploading file...</div>';
+        
+        // Create FormData
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('position', currentImportPosition);
+        
+        // Get CSRF token
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Upload file
+        fetch('{% url "upload_vertical_picto" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrftoken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                uploadStatus.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>File uploaded successfully!</div>';
+                
+                // If not saved permanently, ask user if they want to save it
+                if (!data.saved_permanently) {
+                    // Store temp filename for later use
+                    window.tempPictoFilename = data.filename;
+                    window.tempPictoPosition = currentImportPosition;
+                    
+                    // Show save permanently modal
+                    setTimeout(function() {
+                        const importModalInstance = bootstrap.Modal.getInstance(importModal);
+                        if (importModalInstance) {
+                            importModalInstance.hide();
+                        }
+                        
+                        // Show save permanently modal
+                        const saveModal = new bootstrap.Modal(document.getElementById('savePermanentlyModal'));
+                        saveModal.show();
+                    }, 1000);
+                } else {
+                    // Already saved permanently - add to dropdown and close
+                    addPictoToDropdown(currentImportPosition, data.filename, data.display_name);
+                    
+                    setTimeout(function() {
+                        const modal = bootstrap.Modal.getInstance(importModal);
+                        if (modal) {
+                            modal.hide();
+                        }
+                        pictoFileInput.value = '';
+                        uploadStatus.innerHTML = '';
+                    }, 1500);
+                }
+            } else {
+                // Error
+                uploadStatus.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>${data.error || 'Upload failed'}</div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Upload error:', error);
+            uploadStatus.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>An error occurred during upload</div>';
+        })
+        .finally(() => {
+            // Re-enable button
+            uploadPictoBtn.disabled = false;
+            uploadPictoBtn.innerHTML = '<i class="fas fa-upload me-2"></i>Upload';
+        });
+    });
+    
+    // Reset modal when closed
+    importModal.addEventListener('hidden.bs.modal', function() {
+        if (!window.tempPictoFilename) {
+            // Only reset if not showing save modal
+            currentImportPosition = null;
+            pictoFileInput.value = '';
+            uploadStatus.innerHTML = '';
+            uploadPictoBtn.disabled = false;
+            uploadPictoBtn.innerHTML = '<i class="fas fa-upload me-2"></i>Upload';
+        }
+    });
+    
+    // Save Permanently Modal functionality
+    const savePermanentlyModal = document.getElementById('savePermanentlyModal');
+    const pictoNameInput = document.getElementById('pictoNameInput');
+    const savePermanentlyBtn = document.getElementById('savePermanentlyBtn');
+    const skipSaveBtn = document.getElementById('skipSaveBtn');
+    const saveStatus = document.getElementById('saveStatus');
+    
+    // Helper function to add picto to dropdown
+    function addPictoToDropdown(position, filename, displayName, addToAll = false) {
+        if (addToAll) {
+            // Add to all position dropdowns (for permanently saved pictos)
+            for (let i = 1; i <= 5; i++) {
+                const selectId = `id_vertical_pos_${i}`;
+                const selectElement = document.getElementById(selectId);
+                
+                // Check if option already exists
+                const existingOption = Array.from(selectElement.options).find(opt => opt.value === filename);
+                if (!existingOption) {
+                    const option = document.createElement('option');
+                    option.value = filename;
+                    option.textContent = displayName;
+                    selectElement.appendChild(option);
+                }
+            }
+            
+            // Select in the current position
+            const currentSelectId = `id_vertical_pos_${position}`;
+            const currentSelectElement = document.getElementById(currentSelectId);
+            const currentOption = Array.from(currentSelectElement.options).find(opt => opt.value === filename);
+            if (currentOption) {
+                currentOption.selected = true;
+            }
+        } else {
+            // Add only to specific position dropdown (for temporary uploads)
+            const selectId = `id_vertical_pos_${position}`;
+            const selectElement = document.getElementById(selectId);
+            
+            // Check if option already exists
+            const existingOption = Array.from(selectElement.options).find(opt => opt.value === filename);
+            if (!existingOption) {
+                const option = document.createElement('option');
+                option.value = filename;
+                option.textContent = displayName;
+                option.selected = true;
+                selectElement.appendChild(option);
+            } else {
+                existingOption.selected = true;
+            }
+        }
+    }
+    
+    // Handle skip button
+    skipSaveBtn.addEventListener('click', function() {
+        // Add temp picto to dropdown anyway
+        if (window.tempPictoFilename && window.tempPictoPosition) {
+            addPictoToDropdown(window.tempPictoPosition, window.tempPictoFilename, 'Custom Picto');
+        }
+        
+        // Close modal and reset
+        const modal = bootstrap.Modal.getInstance(savePermanentlyModal);
+        if (modal) {
+            modal.hide();
+        }
+        
+        // Reset everything
+        window.tempPictoFilename = null;
+        window.tempPictoPosition = null;
+        pictoNameInput.value = '';
+        saveStatus.innerHTML = '';
+        currentImportPosition = null;
+        pictoFileInput.value = '';
+        uploadStatus.innerHTML = '';
+    });
+    
+    // Handle save permanently button
+    savePermanentlyBtn.addEventListener('click', function() {
+        const customName = pictoNameInput.value.trim();
+        
+        if (!customName) {
+            saveStatus.innerHTML = '<div class="alert alert-warning">Please enter a name for the picto</div>';
+            return;
+        }
+        
+        if (!window.tempPictoFilename) {
+            saveStatus.innerHTML = '<div class="alert alert-danger">Error: Temporary file not found</div>';
+            return;
+        }
+        
+        // Disable button and show loading
+        savePermanentlyBtn.disabled = true;
+        savePermanentlyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+        saveStatus.innerHTML = '<div class="alert alert-info">Saving picto...</div>';
+        
+        // Get CSRF token
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Save permanently
+        const formData = new FormData();
+        formData.append('temp_filename', window.tempPictoFilename);
+        formData.append('custom_name', customName);
+        
+        fetch('{% url "save_picto_permanently" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrftoken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                saveStatus.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>Picto saved permanently!</div>';
+                
+                // Add to ALL dropdowns (since it's permanently saved) and select it in current position
+                if (window.tempPictoPosition) {
+                    addPictoToDropdown(window.tempPictoPosition, data.filename, data.display_name, true);
+                }
+                
+                // Close modal after delay
+                setTimeout(function() {
+                    const modal = bootstrap.Modal.getInstance(savePermanentlyModal);
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Reset everything
+                    window.tempPictoFilename = null;
+                    window.tempPictoPosition = null;
+                    pictoNameInput.value = '';
+                    saveStatus.innerHTML = '';
+                    currentImportPosition = null;
+                    pictoFileInput.value = '';
+                    uploadStatus.innerHTML = '';
+                }, 1500);
+            } else {
+                saveStatus.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>${data.error || 'Save failed'}</div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Save error:', error);
+            saveStatus.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>An error occurred while saving</div>';
+        })
+        .finally(() => {
+            savePermanentlyBtn.disabled = false;
+            savePermanentlyBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Permanently';
+        });
+    });
+    
+    // Reset save modal when closed
+    savePermanentlyModal.addEventListener('hidden.bs.modal', function() {
+        // If temp file exists but wasn't saved, add it to dropdown anyway
+        if (window.tempPictoFilename && window.tempPictoPosition) {
+            addPictoToDropdown(window.tempPictoPosition, window.tempPictoFilename, 'Custom Picto');
+        }
+        
+        // Reset everything
+        window.tempPictoFilename = null;
+        window.tempPictoPosition = null;
+        pictoNameInput.value = '';
+        saveStatus.innerHTML = '';
+        currentImportPosition = null;
+        pictoFileInput.value = '';
+        uploadStatus.innerHTML = '';
     });
 });
 </script>

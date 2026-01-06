@@ -12,6 +12,8 @@ import json
 from PIL import Image
 import requests
 from io import BytesIO
+from datetime import datetime
+import uuid
 
 
 class ProductIconGenerator:
@@ -112,6 +114,7 @@ class ProductIconGenerator:
         """Add vertical pictos on the left side of the image
         Position 1 = BOTTOM, Position 5 = TOP
         Only renders explicitly selected pictos - no automatic additions
+        Checks both main Vertical_pictos folder and custom_uploads subfolder
         """
         picto_max_size = 130  # Increased size for better visibility
         x_pos = 20  # X position (left side)
@@ -135,7 +138,13 @@ class ProductIconGenerator:
         for i, filename in enumerate(vertical_selections):
             if filename and filename.strip() and i < len(vertical_positions):
                 filename = filename.strip()
+                # First try main directory, then custom_uploads subfolder
                 picto_path = os.path.join(self.vertical_dir, filename)
+                if not os.path.exists(picto_path):
+                    # Try custom_uploads subfolder
+                    custom_uploads_dir = os.path.join(self.vertical_dir, 'custom_uploads')
+                    picto_path = os.path.join(custom_uploads_dir, filename)
+                
                 picto = self.load_picto(picto_path, picto_max_size)
                 if picto:
                     y_pos = vertical_positions[i]
@@ -304,6 +313,12 @@ def home(request):
                 return redirect('batch_result', batch_id=batch.id)
             else:
                 messages.error(request, 'Error generating product images.')
+        else:
+            # Form is invalid - show errors
+            if form.errors:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f'{field}: {error}')
     else:
         form = ProductSubmissionForm()
     
@@ -313,6 +328,7 @@ def home(request):
 def get_picto_data_from_batch(batch):
     """Extract picto data from a batch submission for preview editor
     Only includes explicitly selected pictos - no automatic additions
+    Checks both main Vertical_pictos folder and custom_uploads subfolder
     """
     vertical_pictos = []
     vertical_positions = [575, 430, 285, 140, 5]  # Y positions for vertical pictos (maintaining spacing)
@@ -324,8 +340,13 @@ def get_picto_data_from_batch(batch):
         # Filter out empty strings and whitespace-only values
         if filename and filename.strip():
             filename = filename.strip()
+            # Check if it's a custom upload (starts with 'custom_')
+            if filename.startswith('custom_'):
+                url = f'/data/Vertical_pictos/custom_uploads/{filename}'
+            else:
+                url = f'/data/Vertical_pictos/{filename}'
             vertical_pictos.append({
-                'url': f'/data/Vertical_pictos/{filename}',
+                'url': url,
                 'x': 20,
                 'y': vertical_positions[i-1]
             })
@@ -405,3 +426,117 @@ def get_horizontal_files(request):
         file_choices.append({'value': f, 'label': display_name})
     
     return JsonResponse({'files': file_choices})
+
+
+@csrf_exempt
+def upload_vertical_picto(request):
+    """API endpoint to upload a custom vertical picto for a specific position"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    # Get position from request
+    position = request.POST.get('position')
+    if not position or position not in ['1', '2', '3', '4', '5']:
+        return JsonResponse({'error': 'Invalid position. Must be 1-5'}, status=400)
+    
+    # Get uploaded file
+    if 'file' not in request.FILES:
+        return JsonResponse({'error': 'No file provided'}, status=400)
+    
+    uploaded_file = request.FILES['file']
+    
+    # Validate file extension
+    filename = uploaded_file.name.lower()
+    if not filename.endswith('.webp'):
+        return JsonResponse({'error': 'Only .webp files are allowed'}, status=400)
+    
+    # Validate file size (max 5MB)
+    if uploaded_file.size > 5 * 1024 * 1024:
+        return JsonResponse({'error': 'File size exceeds 5MB limit'}, status=400)
+    
+    # Validate it's actually a valid image
+    try:
+        img = Image.open(uploaded_file)
+        img.verify()
+        uploaded_file.seek(0)  # Reset file pointer after verify
+    except Exception as e:
+        return JsonResponse({'error': f'Invalid image file: {str(e)}'}, status=400)
+    
+    # Always save temporarily to custom_uploads first
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    vertical_dir = os.path.join(base_dir, 'Data', 'Vertical_pictos')
+    custom_uploads_dir = os.path.join(vertical_dir, 'custom_uploads')
+    os.makedirs(custom_uploads_dir, exist_ok=True)
+    
+    # Generate unique filename
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    unique_id = str(uuid.uuid4())[:8]
+    safe_filename = f'custom_pos{position}_{timestamp}_{unique_id}.webp'
+    file_path = os.path.join(custom_uploads_dir, safe_filename)
+    
+    # Save the file
+    try:
+        with open(file_path, 'wb') as f:
+            for chunk in uploaded_file.chunks():
+                f.write(chunk)
+    except Exception as e:
+        return JsonResponse({'error': f'Error saving file: {str(e)}'}, status=500)
+    
+    # Generate display name
+    display_name = os.path.splitext(safe_filename)[0].replace('_', ' ').replace('-', ' ').title()
+    
+    return JsonResponse({
+        'success': True,
+        'filename': safe_filename,
+        'display_name': display_name,
+        'position': position,
+        'saved_permanently': False
+    })
+
+
+@csrf_exempt
+def save_picto_permanently(request):
+    """API endpoint to save a temporarily uploaded picto permanently with a custom name"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    temp_filename = request.POST.get('temp_filename', '').strip()
+    custom_name = request.POST.get('custom_name', '').strip()
+    
+    if not temp_filename or not custom_name:
+        return JsonResponse({'error': 'Missing required parameters'}, status=400)
+    
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    vertical_dir = os.path.join(base_dir, 'Data', 'Vertical_pictos')
+    custom_uploads_dir = os.path.join(vertical_dir, 'custom_uploads')
+    
+    # Check if temp file exists
+    temp_path = os.path.join(custom_uploads_dir, temp_filename)
+    if not os.path.exists(temp_path):
+        return JsonResponse({'error': 'Temporary file not found'}, status=404)
+    
+    # Sanitize filename
+    safe_name = custom_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+    # Remove any extension and add .webp
+    safe_name = os.path.splitext(safe_name)[0] + '.webp'
+    
+    # Check if file already exists
+    permanent_path = os.path.join(vertical_dir, safe_name)
+    if os.path.exists(permanent_path):
+        return JsonResponse({'error': f'A picto with the name "{custom_name}" already exists. Please choose a different name.'}, status=400)
+    
+    # Copy file from temp to permanent location
+    try:
+        import shutil
+        shutil.copy2(temp_path, permanent_path)
+        
+        # Optionally delete temp file (or keep it for reference)
+        # os.remove(temp_path)
+        
+        return JsonResponse({
+            'success': True,
+            'filename': safe_name,
+            'display_name': custom_name
+        })
+    except Exception as e:
+        return JsonResponse({'error': f'Error saving file: {str(e)}'}, status=500)
